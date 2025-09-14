@@ -12,7 +12,7 @@ const app = require('./app');
 // Get the desired port from the process' environment. Default to `8080`
 const port = parseInt(process.env.PORT || '8080', 10);
 
-// Start a server listening on this port
+// Start a server listening on this port, wrapped with stoppable
 const server = stoppable(
   app.listen(port, () => {
     // Log a message that the server has started, and which port it's using.
@@ -20,5 +20,5 @@ const server = stoppable(
   })
 );
 
-// Export our server instance so other parts of our code can access it if necessary.
+// Export our server instance so other parts of our code can access it if necessary
 module.exports = server;

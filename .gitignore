@@ -65,8 +65,10 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
+# Don't include .env, which might have sensitive information
 .env
+
+# dotenv environment variable files
 .env.*
 !.env.example
 
