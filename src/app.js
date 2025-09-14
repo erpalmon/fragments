@@ -30,28 +30,8 @@ app.use(cors());
 // Use gzip/deflate compression middleware
 app.use(compression());
 
-// Define a simple health check route. If the server is running
-// we'll respond with a 200 OK.  If not, the server isn't healthy.
-app.get('/', (req, res) => {
-  // Clients shouldn't cache this response (always request it fresh)
-  // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#controlling_caching
-  res.setHeader('Cache-Control', 'no-cache');
-
-  if (process.env.LOG_LEVEL === 'debug') {
-  const logger = require('./logger'); 
-  logger.debug({ env: process.env }, 'Current process.env');
-}
-
-
-  // Send a 200 'OK' response with info about our repo
-  res.status(200).json({
-    status: 'ok',
-    author,
-    // TODO: change this to use your GitHub username!
-    githubUrl: 'https://github.com/erpalmon/fragments',
-    version,
-  });
-});
+// Define our routes (delegated to routes/index.js)
+app.use('/', require('./routes'));
 
 // Add 404 middleware to handle any requests for resources that can't be found
 app.use((req, res) => {
@@ -67,12 +47,9 @@ app.use((req, res) => {
 // Add error-handling middleware to deal with anything else
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  // We may already have an error response we can use, but if not,
-  // use a generic `500` server error and message.
   const status = err.status || 500;
   const message = err.message || 'unable to process request';
 
-  // If this is a server error, log something so we can see what's going on.
   if (status > 499) {
     logger.error({ err }, `Error processing request`);
   }
