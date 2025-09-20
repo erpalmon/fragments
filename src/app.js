@@ -15,8 +15,8 @@ const pino = require('pino-http')({
   logger,
 });
 
-const passport = require('passport');          // <-- added
-const authenticate = require('./auth');        // <-- added
+const passport = require('passport');         
+const authenticate = require('./auth');        
 
 // Create an express app instance we can use to attach middleware and HTTP routes
 const app = express();
@@ -33,9 +33,19 @@ app.use(cors());
 // Use gzip/deflate compression middleware
 app.use(compression());
 
-// Set up our passport authentication middleware            <-- added
-passport.use(authenticate.strategy());                      // <-- added
-app.use(passport.initialize());                             // <-- added
+// Set up our passport authentication middleware           
+passport.use(authenticate.strategy());                     
+app.use(passport.initialize());                             
+
+// Health check route (uses author and version)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    version,
+    author,
+    githubUrl: 'https://github.com/erpalmon/fragments',
+  });
+});
 
 // Define our routes (delegated to routes/index.js)
 app.use('/', require('./routes'));
