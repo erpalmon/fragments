@@ -6,7 +6,6 @@ const helmet = require('helmet');
 const compression = require('compression');
 
 // author and version from our package.json file
-// TODO: make sure you have updated your name in the `author` section
 const { author, version } = require('../package.json');
 
 const logger = require('./logger');
@@ -15,8 +14,8 @@ const pino = require('pino-http')({
   logger,
 });
 
-const passport = require('passport');         
-const authenticate = require('./auth');        
+const passport = require('passport');
+const authenticate = require('./auth');
 
 const { createSuccessResponse, createErrorResponse } = require('./response');
 
@@ -35,9 +34,9 @@ app.use(cors());
 // Use gzip/deflate compression middleware
 app.use(compression());
 
-// Set up our passport authentication middleware           
-passport.use(authenticate.strategy());                     
-app.use(passport.initialize());                             
+// Set up our passport authentication middleware
+passport.use(authenticate.strategy());
+app.use(passport.initialize());
 
 // Health check route (uses author and version)
 app.get('/health', (req, res) => {
