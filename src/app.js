@@ -63,19 +63,19 @@ app.get('/v1/', (req, res) => {
 });
 
 /**
- * Test-only routes to exercise the error handler
- * Jest runs with NODE_ENV='test', so expose endpoints that throw/forward errors
+ * Test-only routes to exercise the error handler.
+ * Jest runs with NODE_ENV='test'.
  */
 if (process.env.NODE_ENV === 'test') {
-  // Triggers a 500 via thrown error
-  app.post('/error', (req, res) => {
+  // Triggers a 500 via next(err)
+  app.post('/error', (_req, _res, next) => {
     const err = new Error('test error');
     err.status = 500;
-    throw err;
+    next(err);
   });
 
   // Triggers a 501 via next(err)
-  app.post('/error501', (req, res, next) => {
+  app.post('/error501', (_req, _res, next) => {
     const err = new Error('not implemented');
     err.status = 501;
     next(err);
@@ -85,7 +85,6 @@ if (process.env.NODE_ENV === 'test') {
 /**
  * App routes
  * IMPORTANT: do NOT mount at '/v1' here if your router already prefixes '/v1'.
- * Many course templates export a router that internally uses '/v1' for APIs.
  */
 app.use(require('./routes'));
 
