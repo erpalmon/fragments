@@ -18,10 +18,8 @@ describe('in-memory fragments data backend', () => {
     jest.resetModules();
     // Prefer the strategy entry (../../src/model/data); fall back to memory path.
     try {
-      // If you created src/model/data/index.js that re-exports './memory'
       store = require('../../src/model/data');
-    } catch (e) {
-      // Otherwise, import the memory module directly
+    } catch {
       store = require('../../src/model/data/memory');
     }
   });
@@ -53,7 +51,6 @@ describe('in-memory fragments data backend', () => {
     const ownerId = 'user2@example.com';
     const id = 'frag-2';
 
-    // Write minimal metadata first (data is stored separately)
     await store.writeFragment({
       id,
       ownerId,
@@ -84,7 +81,6 @@ describe('in-memory fragments data backend', () => {
     expect(ids.sort()).toEqual(['a', 'b']);
 
     const expanded = await store.listFragments(ownerId, true);
-    // Should be full objects (not strings), order not guaranteed
     expect(expanded.every((o) => typeof o === 'object' && o.id)).toBe(true);
     expect(expanded).toEqual(expect.arrayContaining([a, b]));
   });
@@ -110,13 +106,11 @@ describe('in-memory fragments data backend', () => {
     await store.writeFragment(meta);
     await store.writeFragmentData(ownerId, id, Buffer.from('test'));
 
-    // Sanity: they exist
     expect(await store.readFragment(ownerId, id)).toEqual(meta);
     expect((await store.readFragmentData(ownerId, id)).toString()).toBe('test');
 
     await store.deleteFragment(ownerId, id);
 
-    // Both removed
     expect(await store.readFragment(ownerId, id)).toBeUndefined();
     expect(await store.readFragmentData(ownerId, id)).toBeUndefined();
   });

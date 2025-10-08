@@ -57,7 +57,7 @@ class Fragment {
 
   /** Get fragment data buffer */
   async getData() {
-    return await readFragmentData(this.ownerId, this.id);
+    return readFragmentData(this.ownerId, this.id);
   }
 
   /** Set fragment data buffer (and update size/updated) */
@@ -91,8 +91,8 @@ class Fragment {
     try {
       const { type } = contentType.parse(value);
       return type === 'text/plain';
-    } catch (_err) {
-      // eslint wants the param used or intentionally ignored
+    } catch {
+      // Parsing failed or unsupported
       return false;
     }
   }
