@@ -1,3 +1,5 @@
+// src/model/fragment.js
+
 // Use crypto.randomUUID() to create unique IDs
 const { randomUUID } = require('crypto');
 // Use https://www.npmjs.com/package/content-type to create/parse Content-Type headers
@@ -28,50 +30,37 @@ class Fragment {
     this.updated = updated || new Date().toISOString();
   }
 
-  /**
-   * Get all fragments (id or full) for the given user
-   */
+  /** Get all fragments (id or full) for the given user */
   static async byUser(ownerId, expand = false) {
     const fragments = await listFragments(ownerId, expand);
     if (!expand) return fragments;
-    // If expand=true, we need to recreate Fragment instances
     return fragments.map((f) => new Fragment(f));
   }
 
-  /**
-   * Gets a fragment for the user by the given id.
-   */
+  /** Get a fragment by id for a user */
   static async byId(ownerId, id) {
     const data = await readFragment(ownerId, id);
     if (!data) throw new Error('Fragment not found');
     return new Fragment(data);
   }
 
-  /**
-   * Delete the user's fragment data and metadata for the given id
-   */
+  /** Delete a fragment (metadata + data) */
   static async delete(ownerId, id) {
     await deleteFragment(ownerId, id);
   }
 
-  /**
-   * Saves the current fragment (metadata) to the database
-   */
+  /** Save fragment metadata */
   async save() {
     this.updated = new Date().toISOString();
     await writeFragment(this);
   }
 
-  /**
-   * Gets the fragment's data from the database
-   */
+  /** Get fragment data buffer */
   async getData() {
     return await readFragmentData(this.ownerId, this.id);
   }
 
-  /**
-   * Set the fragment's data in the database
-   */
+  /** Set fragment data buffer (and update size/updated) */
   async setData(data) {
     if (!Buffer.isBuffer(data)) throw new Error('Data must be a Buffer');
     this.size = data.length;
@@ -80,37 +69,30 @@ class Fragment {
     await writeFragmentData(this.ownerId, this.id, data);
   }
 
-  /**
-   * Returns the mime type (e.g., without encoding) for the fragment's type
-   */
+  /** Mime type without charset */
   get mimeType() {
     const { type } = contentType.parse(this.type);
     return type;
   }
 
-  /**
-   * Returns true if this fragment is a text/* mime type
-   */
+  /** Is this a text/* type? */
   get isText() {
     return this.mimeType.startsWith('text/');
   }
 
-  /**
-   * Returns the formats into which this fragment type can be converted
-   */
+  /** Supported conversions for this type */
   get formats() {
     if (this.mimeType === 'text/plain') return ['text/plain'];
     return [];
   }
 
-  /**
-   * Returns true if we know how to work with this content type
-   */
+  /** Do we support this Content-Type? */
   static isSupportedType(value) {
     try {
       const { type } = contentType.parse(value);
       return type === 'text/plain';
-    } catch (err) {
+    } catch (_err) {
+      // eslint wants the param used or intentionally ignored
       return false;
     }
   }

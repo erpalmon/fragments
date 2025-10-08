@@ -29,6 +29,7 @@ describe('auth-middleware', () => {
 
     // Simulate passport calling our callback with (null, email)
     passport.authenticate.mockImplementation((_name, _opts, cb) => {
+      // eslint-disable-next-line no-unused-vars
       return (req, res, next) => cb(null, email);
     });
 
@@ -43,6 +44,7 @@ describe('auth-middleware', () => {
 
   test('returns 401 when no email (unauthorized)', async () => {
     passport.authenticate.mockImplementation((_name, _opts, cb) => {
+      // eslint-disable-next-line no-unused-vars
       return (req, res, next) => cb(null, false);
     });
 
@@ -59,6 +61,7 @@ describe('auth-middleware', () => {
 
   test('returns 500 on unexpected error', async () => {
     passport.authenticate.mockImplementation((_name, _opts, cb) => {
+      // eslint-disable-next-line no-unused-vars
       return (req, res, next) => cb(new Error('boom'));
     });
 
