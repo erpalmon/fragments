@@ -1,18 +1,21 @@
 // src/server.js
 
-const stoppable = require('stoppable');
-const logger = require('./logger');
+const http = require('http');
 const app = require('./app');
+const logger = require('./logger');
 
-const port = parseInt(process.env.PORT || '8080', 10);
-// Bind to all interfaces so traffic from the public IP works
-const host = process.env.HOST || '0.0.0.0';
+const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || '0.0.0.0';
 
-const server = stoppable(
-  app.listen(port, host, () => {
-    logger.info({ host, port }, 'Server started');
-  })
-);
+const server = http.createServer(app);
+
+server.listen(PORT, HOST, () => {
+  logger.info({ host: HOST, port: PORT, env: process.env.NODE_ENV }, 'fragments API server listening');
+});
+
+server.on('error', (err) => {
+  logger.error({ err }, 'server error');
+  process.exit(1);
+});
 
 module.exports = server;
-
