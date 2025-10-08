@@ -4,10 +4,11 @@
 // https://github.com/http-auth/http-auth-passport
 
 const auth = require('http-auth');
-const passport = require('passport');
 const authPassport = require('http-auth-passport');
-
 const logger = require('../logger');
+
+// Use our custom middleware that hashes req.user
+const authorize = require('./auth-middleware');
 
 // We expect HTPASSWD_FILE to be defined.
 if (!process.env.HTPASSWD_FILE) {
@@ -17,13 +18,15 @@ if (!process.env.HTPASSWD_FILE) {
 // Log that we're using Basic Auth
 logger.info('Using HTTP Basic Auth for auth');
 
+// Export a Passport strategy built from http-auth
 module.exports.strategy = () =>
-  // For our Passport authentication strategy, we'll look for a
-  // username/password pair in the Authorization header.
   authPassport(
     auth.basic({
       file: process.env.HTPASSWD_FILE,
     })
   );
 
-module.exports.authenticate = () => passport.authenticate('http', { session: false });
+// Delegate authenticate() to our authorize middleware
+// This runs the 'http' strategy, then hashes the authenticated email into req.user
+module.exports.authenticate = () => authorize('http');
+
