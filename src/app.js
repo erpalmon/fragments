@@ -19,7 +19,14 @@ const app = express();
 // ---- Global middleware ----
 app.use(pino);
 app.use(helmet());
-app.use(cors());
+// Allow your local UI and the Authorization header
+app.use(
+  cors({
+    origin: 'http://localhost:1234',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
+  })
+);
 app.use(compression());
 
 // ---- Passport strategy + init (auth is applied inside routes, not globally) ----
