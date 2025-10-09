@@ -1,4 +1,5 @@
 // src/server.js
+require('dotenv').config();
 'use strict';
 
 require('dotenv').config();
