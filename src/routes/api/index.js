@@ -8,7 +8,10 @@ const router = express.Router();
 // GET /v1/fragments (list)
 router.get('/fragments', require('./get'));
 
-// GET /v1/fragments/:id (get one)
+// NEW: GET /v1/fragments/:id.ext  (e.g., Markdown -> HTML)
+router.get('/fragments/:id.:ext', require('./get-by-id-ext'));
+
+// GET /v1/fragments/:id (get one, raw/original)
 router.get('/fragments/:id', require('./get-by-id'));
 
 // Raw body parser (Buffer for supported types)
@@ -30,3 +33,4 @@ const rawBody = () =>
 router.post('/fragments', rawBody(), require('./post'));
 
 module.exports = router;
+
