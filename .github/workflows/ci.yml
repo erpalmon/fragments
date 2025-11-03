@@ -98,3 +98,16 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and Push an Image to Docker Hub
+      - name: Build and push
+        env:
+          # Your Docker Hub repo: <username>/<repo>
+          DOCKERHUB_REPO: erpalmon/fragments
+          # Tag the image with the current commit SHA
+          SHA_TAG: sha-${{ github.sha }}
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          # Push three tags: the SHA tag, 'main', and 'latest'
+          tags: ${{ env.DOCKERHUB_REPO }}:${{ env.SHA_TAG }}, ${{ env.DOCKERHUB_REPO }}:main, ${{ env.DOCKERHUB_REPO }}:latest
