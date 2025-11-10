@@ -13,6 +13,8 @@ on:
   push:
     branches:
       - main
+  # (Optional) allow manual runs from the Actions tab
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -80,44 +82,55 @@ jobs:
         # run: npm install-ci-test
         run: npm install-ci-test
 
-    docker-hub:
-      name: Build and Push to Docker Hub
-      needs: [lint, dockerfile-lint, unit-tests]
-      runs-on: ubuntu-latest
+  # ---------------------------------------------------------------------------
+  # Build and push the Docker image to Docker Hub after the above jobs succeed.
+  # NOTE: job id uses underscore (docker_hub) and is aligned with other jobs.
+  # ---------------------------------------------------------------------------
+  docker_hub:
+    name: Build and Push to Docker Hub
+    needs: [lint, dockerfile-lint, unit-tests]
+    runs-on: ubuntu-latest
 
-      env:
-        IMAGE: erpalmon/fragments
+    env:
+      # Your Docker Hub repo: <username>/<repo>
+      IMAGE: erpalmon/fragments
 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+    steps:
+      # We must checkout the repo so Docker has a build context (Dockerfile, etc.)
+      - name: Checkout
+        uses: actions/checkout@v4
 
-        - name: Set up QEMU (multi-arch)
-          uses: docker/setup-qemu-action@v3
+      # Enable multi-arch emulation so we can build for amd64 + arm64
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
 
-        - name: Set up Buildx
-          uses: docker/setup-buildx-action@v3
+      # Use Buildx for advanced builds and cache support
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # Login to Docker Hub using GitHub secrets (stored in repo settings)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-        - name: Compute tags
-          id: meta
-          run: |
-            SHA7=${GITHUB_SHA::7}
-            echo "sha_tag=${SHA7}" >> $GITHUB_OUTPUT
-            echo "tags=${{ env.IMAGE }}:${SHA7},${{ env.IMAGE }}:main,${{ env.IMAGE }}:latest" >> $GITHUB_OUTPUT
+      # Compute clean tags: short SHA + main + latest
+      - name: Compute tags
+        id: meta
+        run: |
+          SHA7=${GITHUB_SHA::7}
+          echo "sha_tag=$SHA7" >> "$GITHUB_OUTPUT"
+          echo "tags=${{ env.IMAGE }}:$SHA7,${{ env.IMAGE }}:main,${{ env.IMAGE }}:latest" >> "$GITHUB_OUTPUT"
 
-        - name: Build and push (multi-arch)
-          uses: docker/build-push-action@v6
-          with:
-            context: .
-            push: true
-            platforms: linux/amd64,linux/arm64
-            tags: ${{ steps.meta.outputs.tags }}
-            provenance: false
-            cache-from: type=gha
-            cache-to: type=gha,mode=max
+      # Build and push multi-arch image to Docker Hub
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          provenance: false            # optional: smaller manifest
+          cache-from: type=gha         # speed up rebuilds using GitHub cache
+          cache-to: type=gha,mode=max
