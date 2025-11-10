@@ -13,6 +13,7 @@ ENV PORT=8080
 WORKDIR /app
 
 # PID 1 handling for clean shutdowns
+# hadolint ignore=DL3018
 RUN apk add --no-cache tini
 
 # Copy production node_modules first, then only runtime files
