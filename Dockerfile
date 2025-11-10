@@ -1,34 +1,35 @@
-# ---------- Build stage (dev deps allowed for build) ----------
-FROM node:18.13.0 AS build
+# ---------- deps stage: install production deps only ----------
+FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Better layer caching: copy only package files first
+# Install only prod deps; cache-friendly
 COPY package*.json ./
-RUN npm ci --omit=dev=false
+RUN npm ci --omit=dev
 
-# Copy source and any runtime assets you need (like .htpasswd)
-COPY ./src ./src
-COPY ./tests/.htpasswd ./tests/.htpasswd
-# If you transpile/bundle, do it here:
-# RUN npm run build
-
-# ---------- Runtime stage (smaller, prod-only, non-root) ----------
-FROM node:18.13.0-slim AS runtime
+# ---------- app stage: tiny runtime image ----------
+FROM node:20-alpine AS app
 ENV NODE_ENV=production
 ENV PORT=8080
 WORKDIR /app
 
-# Install prod deps only (smaller image)
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+# PID 1 handling for clean shutdowns
+RUN apk add --no-cache tini
 
-# Copy the built app (or source) from the build stage
-COPY --from=build /app/src ./src
-COPY --from=build /app/tests/.htpasswd ./tests/.htpasswd
+# Copy production node_modules first, then only runtime files
+COPY --from=deps /app/node_modules /app/node_modules
+COPY package*.json ./
+COPY src ./src
 
 # Security: run as non-root
-RUN useradd -m appuser
-USER appuser
+RUN addgroup -S app && adduser -S app -G app
+USER app
 
 EXPOSE 8080
-CMD ["npm", "start"]
+
+# Basic healthcheck against your health endpoint
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -qO- http://localhost:8080/ || exit 1
+
+# Entrypoint + command (no npm wrapper needed)
+ENTRYPOINT ["/sbin/tini","--"]
+CMD ["node","src/index.js"]

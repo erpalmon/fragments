@@ -1,10 +1,30 @@
+# deps & caches
 node_modules
 npm-debug.log
+*.log
+
+# VCS & editor
 .git
 .gitignore
-README.md
-*.env
 .vscode
 .DS_Store
-coverage
-dist
+
+# env & build artifacts
+*.env
+coverage/
+dist/
+*.tgz
+
+# DO NOT ship tests into the runtime image
+tests/
+
+# docs we don't need at runtime
+README.md
+
+# secrets (never bake into image)
+.htpasswd
+htpasswd
+
+# repo/build junk not needed in final image
+.github/
+Dockerfile
