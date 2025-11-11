@@ -15,16 +15,31 @@ const {
   deleteFragment,
 } = require('./data');
 
+// --- helpers ---
+function normalizeMime(value = '') {
+  // Safely parse and strip any charset/params, return lowercased base type
+  const { type } = contentType.parse(value);
+  return type.toLowerCase();
+}
+
+function isAllowedMime(base) {
+  // A2 requirement: ANY text/* + application/json
+  return base === 'application/json' || base.startsWith('text/');
+}
+
 class Fragment {
   constructor({ id, ownerId, created, updated, type, size = 0 }) {
     if (!ownerId) throw new Error('ownerId is required');
     if (!type) throw new Error('type is required');
-    if (!Fragment.isSupportedType(type)) throw new Error('Unsupported type');
+
+    const base = normalizeMime(type);
+    if (!Fragment.isSupportedType(base)) throw new Error('Unsupported type');
+
     if (typeof size !== 'number' || size < 0) throw new Error('Invalid size');
 
     this.id = id || randomUUID();
     this.ownerId = ownerId;
-    this.type = type;
+    this.type = type; // keep the original (may include charset)
     this.size = size;
     this.created = created || new Date().toISOString();
     this.updated = updated || new Date().toISOString();
@@ -72,7 +87,7 @@ class Fragment {
   /** Mime type without charset */
   get mimeType() {
     const { type } = contentType.parse(this.type);
-    return type;
+    return type.toLowerCase();
   }
 
   /** Is this a text/* type? */
@@ -80,21 +95,38 @@ class Fragment {
     return this.mimeType.startsWith('text/');
   }
 
-  /** Supported conversions for this type */
+  /**
+   * Supported conversions for this fragment's type.
+   * A2 requirement: Markdown -> HTML only.
+   * Return a list of target MIME types you can convert to.
+   */
   get formats() {
-    if (this.mimeType === 'text/plain') return ['text/plain'];
-    return [];
+    if (this.mimeType === 'text/markdown') return ['text/html'];
+    // No conversion: you can always "convert" to yourself
+    return [this.mimeType];
   }
 
   /** Do we support this Content-Type? */
   static isSupportedType(value) {
     try {
-      const { type } = contentType.parse(value);
-      return type === 'text/plain';
+      const base = normalizeMime(value);
+      return isAllowedMime(base);
     } catch {
       // Parsing failed or unsupported
       return false;
     }
+  }
+
+  /** Metadata shape used by routes */
+  toJSON() {
+    return {
+      id: this.id,
+      ownerId: this.ownerId,
+      type: this.type,
+      size: this.size,
+      created: this.created,
+      updated: this.updated,
+    };
   }
 }
 

@@ -6,7 +6,6 @@ const compression = require('compression');
 const passport = require('passport');
 
 const { author, version } = require('../package.json');
-
 const logger = require('./logger');
 const pino = require('pino-http')({ logger });
 
@@ -19,27 +18,38 @@ const app = express();
 app.use(pino);
 app.use(helmet());
 
-// Preflight/CORS headers FIRST, before auth or routes
+// CORS preflight
 app.use((req, res, next) => {
-  const origin = req.headers.origin || 'http://localhost:1234';
+  const origin = req.headers.origin || 'http://localhost:1234/';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  // If you later use cookies, also add: res.setHeader('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
-// You can keep cors() to set standard CORS headers on actual responses
 app.use(cors());
 app.use(compression());
 
-// ---- Passport strategy + init (auth is applied inside routes, not globally) ----
+// ✅ Make req.body a Buffer for application/json and any text/*
+// NOTE: `type` gets the req object, not the content-type string.
+app.use(
+  express.raw({
+    limit: '1mb',
+    type: (req) => {
+      const ct = req.headers['content-type'] || '';
+      const t = ct.split(';')[0].trim().toLowerCase();
+      return t === 'application/json' || t.startsWith('text/');
+    },
+  })
+);
+
+// ---- Passport strategy + init ----
 passport.use(authenticate.strategy());
 app.use(passport.initialize());
 
-// PUBLIC health at '/'
+// Public health at '/'
 app.get('/', (req, res) => {
   res.set({
     'Cache-Control': 'no-cache',
@@ -55,7 +65,7 @@ app.get('/', (req, res) => {
   );
 });
 
-// Optional health at /v1/ (handy for EC2 screenshots)
+// Optional public health at /v1/
 app.get('/v1/', (req, res) => {
   res.set({
     'Cache-Control': 'no-cache',
@@ -71,21 +81,7 @@ app.get('/v1/', (req, res) => {
   );
 });
 
-// Test-only error routes
-if (process.env.NODE_ENV === 'test') {
-  app.post('/error', (_req, _res, next) => {
-    const err = new Error('test error');
-    err.status = 500;
-    next(err);
-  });
-  app.post('/error501', (_req, _res, next) => {
-    const err = new Error('not implemented');
-    err.status = 501;
-    next(err);
-  });
-}
-
-// App routes (router already prefixes /v1 and applies auth)
+// Mount routes (includes /v1/health public + /v1/* auth)
 app.use(require('./routes'));
 
 // 404
@@ -98,12 +94,9 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   const status = err.status || 500;
   const message = err.message || 'unable to process request';
-
-  if (status > 499) {
-    logger.error({ err }, 'Error processing request');
-  }
-
+  if (status > 499) logger.error({ err }, 'Error processing request');
   res.status(status).json(createErrorResponse(status, message));
 });
 
 module.exports = app;
+

@@ -34,14 +34,14 @@ describe('POST /v1/fragments Location header branches', () => {
 
     const res = await request(app)
       .post(path)
-      .set('Host', 'localhost:9999')
+      .set('Host', 'localhost:8080')
       .set('Content-Type', 'text/plain')
       .auth(EMAIL, PASS)
       .send(body);
 
     expect(res.statusCode).toBe(201);
     expect(res.headers.location).toMatch(
-      /^http:\/\/localhost:9999\/v1\/fragments\/[a-f0-9-]+$/i
+      /^http:\/\/localhost:8080\/v1\/fragments\/[a-f0-9-]+$/i
     );
   });
 });

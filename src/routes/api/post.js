@@ -5,18 +5,26 @@ const { createSuccessResponse, createErrorResponse } = require('../../response')
 
 module.exports = async (req, res, next) => {
   try {
-    // Must be a Buffer → means supported type
+    // Must be a Buffer → our express.raw() guarantees this for allowed types
     if (!Buffer.isBuffer(req.body)) {
-      req.log?.warn({ ct: req.headers['content-type'] }, 'Unsupported Content-Type');
+      req.log?.warn({ ct: req.headers['content-type'] }, 'Unsupported Content-Type (not buffer)');
       return res.status(415).json(createErrorResponse(415, 'Unsupported Content-Type'));
     }
 
-    const { type } = contentType.parse(req);
+    // Normalize/parse Content-Type (strip charset)
+    const header = req.headers['content-type'] || '';
+    const { type } = contentType.parse(header); // e.g., 'text/markdown' or 'application/json'
 
-    // Create + save metadata & data
+    const allowed = type === 'application/json' || type.startsWith('text/');
+    if (!allowed) {
+      req.log?.warn({ ct: type }, 'Unsupported Content-Type');
+      return res.status(415).json(createErrorResponse(415, 'Unsupported Content-Type'));
+    }
+
+    // Create + save
     const fragment = new Fragment({ ownerId: req.user, type });
     await fragment.save();
-    await fragment.setData(req.body);
+    await fragment.setData(req.body); // raw bytes
 
     // Build absolute Location
     const proto = req.headers['x-forwarded-proto'] || 'http';

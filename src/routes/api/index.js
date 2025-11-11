@@ -8,11 +8,10 @@ const router = express.Router();
 // GET /v1/fragments (list)
 router.get('/fragments', require('./get'));
 
-// NEW: GET /v1/fragments/:id.ext  (e.g., Markdown -> HTML)
-router.get('/fragments/:id.:ext', require('./get-by-id-ext'));
-
-// GET /v1/fragments/:id (get one, raw/original)
-router.get('/fragments/:id', require('./get-by-id'));
+// --- Put specific routes FIRST ---
+router.get('/fragments/:id/info', require('./get-by-id-info'));  // metadata
+router.get('/fragments/:id.:ext', require('./get-by-id-ext'));   // conversion
+router.get('/fragments/:id', require('./get-by-id'));            // raw data
 
 // Raw body parser (Buffer for supported types)
 const rawBody = () =>
@@ -33,4 +32,3 @@ const rawBody = () =>
 router.post('/fragments', rawBody(), require('./post'));
 
 module.exports = router;
-
