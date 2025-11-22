@@ -25,25 +25,27 @@ until (curl --silent http://localhost:4566/_localstack/health | grep "\"s3\": \"
 done
 echo 'LocalStack S3 Ready'
 
-# Create our S3 bucket with LocalStack
-echo "Creating LocalStack S3 bucket: fragments"
-aws --endpoint-url=http://localhost:4566 s3api create-bucket --bucket fragments
+# Ensure S3 bucket exists
+if ! aws --endpoint-url=http://localhost:4566 s3api head-bucket --bucket fragments 2>/dev/null; then
+  echo "Creating LocalStack S3 bucket: fragments"
+  aws --endpoint-url=http://localhost:4566 s3api create-bucket --bucket fragments
+else
+  echo "Bucket fragments already exists"
+fi
 
-# Setup DynamoDB Table with dynamodb-local, see:
-# https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/getting-started-step-1.html
-echo "Creating DynamoDB-Local DynamoDB table: fragments"
-aws --endpoint-url=http://localhost:8000 \
-dynamodb create-table \
-    --table-name fragments \
-    --attribute-definitions \
-        AttributeName=ownerId,AttributeType=S \
-        AttributeName=id,AttributeType=S \
-    --key-schema \
-        AttributeName=ownerId,KeyType=HASH \
-        AttributeName=id,KeyType=RANGE \
-    --provisioned-throughput \
-        ReadCapacityUnits=10,WriteCapacityUnits=5
+# Ensure DynamoDB table exists
+if ! aws --endpoint-url=http://localhost:8000 dynamodb describe-table --table-name fragments >/dev/null 2>&1; then
+  echo "Creating DynamoDB-Local DynamoDB table: fragments"
+  aws --endpoint-url=http://localhost:8000 \
+    dynamodb create-table \
+      --table-name fragments \
+      --attribute-definitions AttributeName=ownerId,AttributeType=S AttributeName=id,AttributeType=S \
+      --key-schema AttributeName=ownerId,KeyType=HASH AttributeName=id,KeyType=RANGE \
+      --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=5
 
-# Wait until the Fragments table exists in dynamodb-local, so we can use it, see:
-# https://awscli.amazonaws.com/v2/documentation/api/latest/reference/dynamodb/wait/table-exists.html
+  # Wait until the Fragments table exists in dynamodb-local, so we can use it
+  aws --endpoint-url=http://localhost:8000 dynamodb wait table-exists --table-name fragments
+else
+  echo "Table fragments already exists"
+fi
 aws --endpoint-url=http://localhost:8000 dynamodb wait table-exists --table-name fragments

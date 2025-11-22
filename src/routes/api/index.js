@@ -12,6 +12,7 @@ router.get('/fragments', require('./get'));
 router.get('/fragments/:id/info', require('./get-by-id-info'));  // metadata
 router.get('/fragments/:id.:ext', require('./get-by-id-ext'));   // conversion
 router.get('/fragments/:id', require('./get-by-id'));            // raw data
+router.delete('/fragments/:id', require('./delete'));            // delete
 
 // Raw body parser (Buffer for supported types)
 const rawBody = () =>
@@ -30,5 +31,7 @@ const rawBody = () =>
 
 // POST /v1/fragments (create)
 router.post('/fragments', rawBody(), require('./post'));
+
+router.delete('/fragments/:id', require('./delete'));
 
 module.exports = router;
