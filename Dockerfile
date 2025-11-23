@@ -2,35 +2,38 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Install only prod deps; cache-friendly
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# ---------- app stage: tiny runtime image ----------
+# ---------- app stage: production runtime ----------
 FROM node:20-alpine AS app
-ENV NODE_ENV=production
-ENV PORT=8080
 WORKDIR /app
 
-# PID 1 handling for clean shutdowns
-# hadolint ignore=DL3018
+# Environment configuration
+ENV NODE_ENV=production
+ENV PORT=80     
+# Install tini for proper signal handling
 RUN apk add --no-cache tini
 
-# Copy production node_modules first, then only runtime files
+# Copy production node_modules first for caching
 COPY --from=deps /app/node_modules /app/node_modules
+
+# Copy application code
 COPY package*.json ./
 COPY src ./src
 
-# Security: run as non-root
-RUN addgroup -S app && adduser -S app -G app
-USER app
+# IMPORTANT: run as root (Fargate needs this for port 80)
+# DO NOT switch to a non-root user
 
-EXPOSE 8080
+# App listens on port 80
+EXPOSE 80
 
-# Basic healthcheck against your health endpoint
+# ECS-compatible healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -qO- http://localhost:8080/ || exit 1
+  CMD wget -qO- http://localhost:80/v1/health || exit 1
 
-# Entrypoint + command (no npm wrapper needed)
+# Use tini as entrypoint
 ENTRYPOINT ["/sbin/tini","--"]
+
+# Start the fragments server
 CMD ["node","src/index.js"]
