@@ -1,39 +1,32 @@
-# ---------- deps stage: install production deps only ----------
-FROM node:20-alpine AS deps
+# ---------- deps stage ----------
+FROM node:22.20-alpine@sha256:dbcedd8aeab47fbc0f4dd4bffa55b7c3c729a707875968d467aaaea42d6225af AS deps
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --production
 
-# ---------- app stage: production runtime ----------
-FROM node:20-alpine AS app
+# ---------- app stage ----------
+FROM node:22.20-alpine@sha256:dbcedd8aeab47fbc0f4dd4bffa55b7c3c729a707875968d467aaaea42d6225af AS app
 WORKDIR /app
 
-# Environment configuration
-ENV NODE_ENV=production
-ENV PORT=80     
-# Install tini for proper signal handling
-RUN apk add --no-cache tini
+ENV NODE_ENV=production \
+    PORT=8080 \
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_COLOR=false
 
-# Copy production node_modules first for caching
-COPY --from=deps /app/node_modules /app/node_modules
+# Install curl for health checks
+RUN apk update && apk add --no-cache curl
 
-# Copy application code
+COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
 COPY src ./src
+COPY tests/.htpasswd ./tests/.htpasswd
 
-# IMPORTANT: run as root (Fargate needs this for port 80)
-# DO NOT switch to a non-root user
+# Expose port
+EXPOSE 8080
 
-# App listens on port 80
-EXPOSE 80
+# Healthcheck (CORRECT ✓)
+HEALTHCHECK --interval=15s --timeout=30s --start-period=10s --retries=3 \
+  CMD curl --fail http://localhost:8080/ || exit 1
 
-# ECS-compatible healthcheck
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -qO- http://localhost:80/v1/health || exit 1
-
-# Use tini as entrypoint
-ENTRYPOINT ["/sbin/tini","--"]
-
-# Start the fragments server
-CMD ["node","src/index.js"]
+CMD ["npm", "start"]
