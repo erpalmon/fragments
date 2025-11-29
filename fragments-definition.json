@@ -1,0 +1,43 @@
+{
+  "requiresCompatibilities": ["FARGATE"],
+  "family": "fragments-task",
+  "networkMode": "awsvpc",
+  "cpu": "256",
+  "memory": "512",
+
+  "executionRoleArn": "arn:aws:iam::058264237953:role/LabRole",
+  "taskRoleArn": "arn:aws:iam::058264237953:role/LabRole",
+
+  "containerDefinitions": [
+    {
+      "name": "fragments-container",
+      "image": "erpalmon/fragments:latest",
+      "essential": true,
+
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+
+      "environment": [
+        { "name": "AWS_REGION", "value": "us-east-1" },
+        { "name": "AWS_S3_BUCKET_NAME", "value": "erpalmon-fragments" },
+        { "name": "LOG_LEVEL", "value": "info" },
+        { "name": "NODE_ENV", "value": "production" }
+      ],
+
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/fragments-task",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+
+  "volumes": []
+}

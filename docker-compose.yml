@@ -1,0 +1,56 @@
+# docker-compose.yml
+
+services:
+  # Fragments microservice API server
+  fragments:
+    init: true
+    build: .
+
+    environment:
+      # Our API will be running on http://localhost:8080
+      API_URL: http://localhost:8080
+
+      # Enable Basic Auth (required so service can start)
+      HTPASSWD_FILE: tests/.htpasswd
+      NODE_ENV: development   # <-- THIS FIXES THE CRASH
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # AWS + DynamoDB configuration
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+
+      # LocalStack S3 endpoint
+      AWS_S3_ENDPOINT_URL: http://localstack:4566
+
+      # DynamoDB Local endpoint
+      AWS_DYNAMODB_ENDPOINT_URL: http://dynamodb-local:8000
+
+      # Bucket + Table Names
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-fragments}
+      AWS_DYNAMODB_TABLE_NAME: ${AWS_DYNAMODB_TABLE_NAME:-fragments}
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      - dynamodb-local
+      - localstack
+
+  # DynamoDB Local
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    ports:
+      - "8000:8000"
+    command: ['-jar', 'DynamoDBLocal.jar', '-inMemory']
+
+  # LocalStack for S3 + DynamoDB dependencies
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,dynamodb,iam
+      DEFAULT_REGION: us-east-1

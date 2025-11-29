@@ -1,0 +1,34 @@
+# deps & caches
+node_modules
+npm-debug.log
+*.log
+
+# VCS & editor
+.git
+.gitignore
+.vscode
+.DS_Store
+
+# env & build artifacts
+*.env
+coverage/
+dist/
+*.tgz
+
+# DO NOT ship most tests, BUT keep .htpasswd
+tests/*
+!tests/.htpasswd
+
+
+# docs we don't need at runtime
+README.md
+
+# secrets (never bake into image)
+.htpasswd
+htpasswd
+
+# repo/build junk not needed in final image
+.github/
+Dockerfile
+
+minio/
