@@ -1,29 +1,24 @@
-// src/auth/auth-middleware.js
 const passport = require('passport');
-const hash = require('../hash');
+const { createHash } = require('../hash');
 
-// Our authorize() middleware wraps passport.authenticate() and
-// stores the hashed user email in req.user.
-module.exports = function authorize(name) {
+module.exports.authorize = (strategy) => {
   return (req, res, next) => {
-    passport.authenticate(name, { session: false }, (err, email) => {
+    passport.authenticate(strategy, { session: false }, (err, user) => {
       if (err) {
         return res.status(500).json({
           status: 'error',
-          error: err,
+          message: 'Authentication failed',
         });
       }
 
-      if (!email) {
+      if (!user || !user.email) {
         return res.status(401).json({
           status: 'error',
-          error: new Error('unauthorized'),
+          message: 'Unauthorized',
         });
       }
 
-      // Hash the authenticated email and attach to req.user
-      req.user = hash(email);
-
+      req.user = createHash(user.email);
       next();
     })(req, res, next);
   };
