@@ -40,28 +40,26 @@ const getDynamoDBEndpoint = () => {
   }
 };
 
-// Create and configure an Amazon DynamoDB client object.
+// Create a DynamoDB client
 const ddbClient = new DynamoDBClient({
   region: process.env.AWS_REGION,
   endpoint: getDynamoDBEndpoint(),
   credentials: getCredentials(),
 });
 
-// Instead of exposing the ddbClient directly, we'll wrap it with a helper
-// that will simplify converting data to/from DynamoDB and JavaScript (i.e.
-// marshalling and unmarshalling typed attribute data)
+// Create the DynamoDB Document Client with the correct marshalling options
 const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
   marshallOptions: {
-    // Whether to automatically convert empty strings, blobs, and sets to `null`.
-    convertEmptyValues: false, // false, by default.
-    // Whether to remove undefined values while marshalling.
-    removeUndefinedValues: false, // false, by default.
-    // Whether to convert typeof object to map attribute.
-    convertClassInstanceToMap: true, // we have to set this to `true` for LocalStack
+    // Whether to automatically convert empty strings, blobs, and sets to `null`
+    convertEmptyValues: false, // false, by default
+    // Whether to remove undefined values while marshalling
+    removeUndefinedValues: false, // false, by default
+    // Whether to convert typeof object to map attribute
+    convertClassInstanceToMap: false, // false, by default
   },
   unmarshallOptions: {
-    // Whether to return numbers as a string instead of converting them to native JavaScript numbers.
-    wrapNumbers: false, // false, by default.
+    // Whether to return numbers as a string instead of converting them to native JavaScript numbers
+    wrapNumbers: false, // false, by default
   },
 });
 

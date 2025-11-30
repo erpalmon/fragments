@@ -9,14 +9,16 @@ const { author, version } = require('../package.json');
 const logger = require('./logger');
 const pino = require('pino-http')({ logger });
 
-const authenticate = require('./auth');
+const auth = require('./auth');
 const { createSuccessResponse, createErrorResponse } = require('./response');
 
 const app = express();
 
-// ---- Global middleware ----
+// global middleware
 app.use(pino);
 app.use(helmet());
+app.use(cors());
+app.use(compression());
 
 // CORS preflight
 app.use((req, res, next) => {
@@ -29,68 +31,44 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
-app.use(compression());
-
-// ✅ Make req.body a Buffer for application/json and any text/*
-// NOTE: `type` gets the req object, not the content-type string.
-app.use(
-  express.raw({
-    limit: '1mb',
-    type: (req) => {
-      const ct = req.headers['content-type'] || '';
-      const t = ct.split(';')[0].trim().toLowerCase();
-      return t === 'application/json' || t.startsWith('text/');
-    },
-  })
-);
-
-// ---- Passport strategy + init ----
-passport.use(authenticate.strategy());
+// Passport global initialization
+passport.use(auth.strategy());
 app.use(passport.initialize());
 
-// Public health at '/'
-app.get('/', (req, res) => {
-  res.set({
-    'Cache-Control': 'no-cache',
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-  res.status(200).json(
-    createSuccessResponse({
-      status: 'ok',
-      version,
-      author,
-      githubUrl: 'https://github.com/erpalmon/fragments',
-    })
-  );
-});
-
-// Optional public health at /v1/
-app.get('/v1/', (req, res) => {
-  res.set({
-    'Cache-Control': 'no-cache',
-    'Content-Type': 'application/json; charset=utf-8',
-  });
-  res.status(200).json(
-    createSuccessResponse({
-      status: 'ok',
-      version,
-      author,
-      githubUrl: 'https://github.com/erpalmon/fragments',
-    })
-  );
-});
-
-// Mount routes (includes /v1/health public + /v1/* auth)
+// mount all routes
 app.use(require('./routes'));
+
+// public endpoints
+app.get('/', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.json(
+    createSuccessResponse({
+      status: 'ok',
+      version,
+      author,
+      githubUrl: 'https://github.com/erpalmon/fragments',
+    })
+  );
+});
+
+app.get('/v1/', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.json(
+    createSuccessResponse({
+      status: 'ok',
+      version,
+      author,
+      githubUrl: 'https://github.com/erpalmon/fragments',
+    })
+  );
+});
 
 // 404
 app.use((req, res) => {
   res.status(404).json(createErrorResponse(404, 'not found'));
 });
 
-// Error handler
-// eslint-disable-next-line no-unused-vars
+// error handler
 app.use((err, req, res, next) => {
   const status = err.status || 500;
   const message = err.message || 'unable to process request';
@@ -98,5 +76,21 @@ app.use((err, req, res, next) => {
   res.status(status).json(createErrorResponse(status, message));
 });
 
-module.exports = app;
+// Start the server if this file is run directly (not required/included as a module)
+if (require.main === module) {
+  const PORT = process.env.PORT || 8080;
+  const server = app.listen(PORT, () => {
+    logger.info(`Server running at http://localhost:${PORT}`);
+  });
 
+  // Handle shutdown gracefully
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM signal received. Shutting down gracefully');
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
+  });
+}
+
+module.exports = app;

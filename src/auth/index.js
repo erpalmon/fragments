@@ -1,28 +1,23 @@
 // src/auth/index.js
+const logger = require('../logger');
 
-// Decide which auth strategy to use based on env vars.
-// - In production, we only allow Cognito.
-// - In dev/test, you may use either Cognito or Basic (via HTPASSWD_FILE), but not both.
+// Check which auth strategy to use
+const useCognito = process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID;
+const useBasicAuth = process.env.HTPASSWD_FILE;
 
-const isProd = process.env.NODE_ENV === 'production';
-const hasCognito =
-  !!process.env.AWS_COGNITO_POOL_ID && !!process.env.AWS_COGNITO_CLIENT_ID;
-const hasHtpasswd = !!process.env.HTPASSWD_FILE;
-
-// Do not allow both to be configured at the same time
-if (hasCognito && hasHtpasswd) {
-  throw new Error(
-    'env contains configuration for both AWS Cognito and HTTP Basic Auth. Only one is allowed.'
-  );
+if (useCognito && useBasicAuth) {
+  throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
 }
 
-if (hasCognito) {
-  // Prefer / require Cognito when configured
+if (useCognito) {
+  logger.info('Using AWS Cognito for authentication');
   module.exports = require('./cognito');
-} else if (hasHtpasswd && !isProd) {
-  // Allow Basic Auth only outside production
+} else if (useBasicAuth) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('HTTP Basic Auth is not allowed in production');
+  }
+  logger.info('Using HTTP Basic Auth for development');
   module.exports = require('./basic-auth');
 } else {
-  // In prod without Cognito, or anywhere without any auth config -> error
-  throw new Error('missing env vars: no authorization configuration found');
+  throw new Error('No authorization configuration found');
 }

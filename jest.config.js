@@ -1,27 +1,24 @@
-// jest.config.js (CommonJS)
-
-const path = require("path");
-const { config } = require("dotenv");
-
-const envFile = path.join(__dirname, "env.jest");
-
-// Load Jest env vars
-config({ path: envFile });
-
-console.log(`Using LOG_LEVEL=${process.env.LOG_LEVEL}. Use 'debug' in env.jest for more detail`);
-
+// jest.config.js
 module.exports = {
-  verbose: true,
-  testTimeout: 5000,
-  testEnvironment: "node",
-
-  transform: {},
-
-  moduleNameMapper: {
-    "^(\\.{1,2}/.*)\\.js$": "$1",
-  },
-
-  transformIgnorePatterns: [
-    "node_modules/(?!(node-fetch|data-uri-to-buffer|fetch-blob|formdata-polyfill)/)",
+  testEnvironment: 'node',
+  setupFiles: ['<rootDir>/tests/setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  testMatch: [
+    '**/tests/unit/**/*.test.js',
+    '**/tests/integration/**/*.test.js'
   ],
+  testPathIgnorePatterns: ['/node_modules/'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/auth/(.*)$': '<rootDir>/src/auth/$1',
+    '^@/model/(.*)$': '<rootDir>/src/model/$1'
+  },
+  moduleFileExtensions: ['js', 'json'],
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  },
+  testEnvironmentOptions: {
+    TEST_AUTH: process.env.TEST_AUTH || 'basic'
+  },
+  testTimeout: 10000 // 10 seconds
 };

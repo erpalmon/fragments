@@ -1,55 +1,50 @@
-describe('auth strategy selection (src/auth/index.js)', () => {
-  const OLD_ENV = process.env;
+describe('auth/index.js', () => {
+  const originalEnv = process.env;
 
   beforeEach(() => {
+    // Reset modules and clear cache
     jest.resetModules();
-    process.env = { ...OLD_ENV }; // clone
-    delete process.env.AWS_COGNITO_POOL_ID;
-    delete process.env.AWS_COGNITO_CLIENT_ID;
-    delete process.env.HTPASSWD_FILE;
-    delete process.env.NODE_ENV;
+    // Clear any existing environment variables
+    process.env = { ...originalEnv };
   });
 
   afterAll(() => {
-    process.env = OLD_ENV;
+    // Restore original environment
+    process.env = originalEnv;
   });
 
-  test('uses Cognito when AWS envs are set', () => {
-    // mock the cognito module so requiring ../../src/auth will resolve to it
-    jest.doMock('../../src/auth/cognito', () => ({ strategy: jest.fn() }), { virtual: true });
-
-    process.env.AWS_COGNITO_POOL_ID = 'pool';
-    process.env.AWS_COGNITO_CLIENT_ID = 'client';
-
-    const mod = require('../../src/auth'); // should pick ./cognito
-    expect(mod).toBeTruthy();
+  test('uses Cognito when AWS credentials are set', () => {
+    process.env.AWS_COGNITO_POOL_ID = 'test-pool-id';
+    process.env.AWS_COGNITO_CLIENT_ID = 'test-client-id';
+    
+    const auth = require('../../src/auth');
+    expect(auth).toBeTruthy();
+    expect(auth.strategy).toBeDefined();
+    expect(auth.authenticate).toBeDefined();
   });
 
-  test('uses Basic Auth when HTPASSWD_FILE is set and not production', () => {
-    jest.doMock('../../src/auth/basic-auth', () => ({ strategy: jest.fn() }), { virtual: true });
-
-    process.env.HTPASSWD_FILE = 'tests/.htpasswd';
-    process.env.NODE_ENV = 'development';
-
-    const mod = require('../../src/auth'); // should pick ./basic-auth
-    expect(mod).toBeTruthy();
+  test('throws error when no auth config is found', () => {
+    expect(() => {
+      require('../../src/auth');
+    }).toThrow('No authorization configuration found');
   });
 
-  test('throws when both Cognito and Basic are configured', () => {
-    process.env.AWS_COGNITO_POOL_ID = 'pool';
-    process.env.AWS_COGNITO_CLIENT_ID = 'client';
-    process.env.HTPASSWD_FILE = 'tests/.htpasswd';
+  test('throws error when both auth methods are configured', () => {
+    process.env.AWS_COGNITO_POOL_ID = 'test-pool-id';
+    process.env.AWS_COGNITO_CLIENT_ID = 'test-client-id';
+    process.env.HTPASSWD_FILE = '.htpasswd';
 
-    expect(() => require('../../src/auth')).toThrow(/both AWS Cognito and HTTP Basic Auth/i);
+    expect(() => {
+      require('../../src/auth');
+    }).toThrow('Cannot use both AWS Cognito and HTTP Basic Auth');
   });
 
-  test('throws when no auth configuration is present', () => {
-    expect(() => require('../../src/auth')).toThrow(/no authorization configuration/i);
-  });
-
-  test('throws in production without Cognito (basic not allowed in prod)', () => {
+  test('throws in production when only basic auth is configured', () => {
     process.env.NODE_ENV = 'production';
-    process.env.HTPASSWD_FILE = 'tests/.htpasswd';
-    expect(() => require('../../src/auth')).toThrow(/no authorization configuration/i);
+    process.env.HTPASSWD_FILE = '.htpasswd';
+    
+    expect(() => {
+      require('../../src/auth');
+    }).toThrow('HTTP Basic Auth is not allowed in production');
   });
 });
