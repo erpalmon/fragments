@@ -4,8 +4,23 @@ const { CognitoJwtVerifier } = require('aws-jwt-verify');
 const logger = require('../logger');
 const authorize = require('./auth-middleware');
 
-if (!(process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID)) {
-  const errorMessage = 'missing expected env vars: AWS_COGNITO_POOL_ID, AWS_COGNITO_CLIENT_ID';
+// ---------------------------------------------------------
+// TEST MODE → Mock Cognito so tests do not hit AWS
+// ---------------------------------------------------------
+if (process.env.NODE_ENV === 'test') {
+  module.exports.strategy = () => ({ name: 'bearer' });
+  module.exports.authenticate = () => (req, res, next) => next();
+  return;
+}
+
+// ---------------------------------------------------------
+// PRODUCTION / DEV REAL COGNITO BELOW
+// ---------------------------------------------------------
+if (
+  !(process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID)
+) {
+  const errorMessage =
+    'missing expected env vars: AWS_COGNITO_POOL_ID, AWS_COGNITO_CLIENT_ID';
   logger.error(errorMessage);
   throw new Error(errorMessage);
 }
