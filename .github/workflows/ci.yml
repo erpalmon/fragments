@@ -68,7 +68,7 @@ jobs:
       # ⭐⭐⭐ ADDED — Upload npm logs when the test step fails ⭐⭐⭐
       - name: Upload npm logs
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: npm-logs
           path: /home/runner/.npm/_logs/
