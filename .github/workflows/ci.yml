@@ -43,7 +43,7 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
-          failure-threshold: warning   # <-- FIX (no fail on warning)
+          failure-threshold: warning
 
   # ============================================================
   # 3️⃣ Unit Tests
@@ -64,6 +64,14 @@ jobs:
 
       - name: Install dependencies and run tests
         run: npm install-ci-test
+
+      # ⭐⭐⭐ ADDED — Upload npm logs when the test step fails ⭐⭐⭐
+      - name: Upload npm logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: npm-logs
+          path: /home/runner/.npm/_logs/
 
   # ============================================================
   # 4️⃣ Docker Hub Build + Push
@@ -101,7 +109,7 @@ jobs:
             ${{ env.DOCKERHUB_REPO }}:latest
 
   # ============================================================
-  # 5️⃣ Integration Tests (LocalStack + DynamoDB Local + Hurl)
+  # 5️⃣ Integration Tests
   # ============================================================
   integration-tests:
     name: Integration Tests
