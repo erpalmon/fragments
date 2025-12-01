@@ -6,20 +6,30 @@ const logger = require('../logger');
 module.exports = (strategyName) => {
   return function (req, res, next) {
     function callback(err, user) {
-      // If passport calls error()
+
+      // 1️⃣ AUTH ERROR → next({ status, message })
       if (err) {
         logger.warn({ err }, 'error authenticating user');
-        return next({ status: 500, message: 'Unable to authenticate user' });
+        return next({
+          status: 500,
+          message: 'Unable to authenticate user',
+        });
       }
 
-      // If passport calls fail()
+      // 2️⃣ AUTH FAIL → respond 401|Unauthorized
       if (!user) {
         logger.warn('401 Unauthorized');
-        return res.status(401).json({ status: 401, message: 'Unauthorized' });
+        res.status(401);
+        return res.json({
+          status: 401,
+          message: 'Unauthorized',
+        });
       }
 
-      // passport.success()
-      req.user = hash(user.email);
+      // 3️⃣ AUTH SUCCESS → hash email + set req.user
+      const hashed = hash(user.email);
+      req.user = hashed;
+
       return next();
     }
 
