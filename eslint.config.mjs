@@ -1,11 +1,15 @@
+// eslint.config.mjs
 import globals from 'globals';
 import pluginJs from '@eslint/js';
 
 export default [
-  // Apply to all JS files
-  { files: ['**/*.js'], languageOptions: { sourceType: 'commonjs' } },
+  // Apply CommonJS for all JS files
+  {
+    files: ['**/*.js'],
+    languageOptions: { sourceType: 'commonjs' },
+  },
 
-  // Jest + Node globals
+  // Add globals for Node & Jest
   {
     languageOptions: {
       globals: {
@@ -15,17 +19,18 @@ export default [
     },
   },
 
-  // ✅ NEW OVERRIDE — disable unused vars ONLY in tests & mocks
+  // ✅ Disable no-unused-vars ONLY in test + mock files
   {
     files: [
       'tests/**',
       'tests/**/*.js',
-      'tests/**/__mocks__/**'
+      'tests/**/__mocks__/**',
     ],
     rules: {
       'no-unused-vars': 'off',
     },
   },
 
+  // Base recommended JS rules
   pluginJs.configs.recommended,
 ];
