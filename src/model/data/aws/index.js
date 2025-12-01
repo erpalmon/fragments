@@ -1,6 +1,7 @@
 const s3Client = require('./s3Client');
 const ddbDocClient = require('./ddbDocClient');
 const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { PutCommand, GetCommand, QueryCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const logger = require('../../../logger');
 
 // DynamoDB table name for fragments metadata
@@ -111,7 +112,6 @@ async function listFragments(ownerId, expand = false) {
 
 // Deletes a fragment's metadata from DynamoDB and its data from S3
 async function deleteFragment(ownerId, id) {
-  // First, delete the fragment data from S3
   const s3Params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: `${ownerId}/${id}`,
@@ -126,7 +126,6 @@ async function deleteFragment(ownerId, id) {
     throw err;
   }
 
-  // Then delete the fragment's metadata from DynamoDB
   const params = {
     TableName: TABLE_NAME,
     Key: { ownerId, id },
@@ -135,22 +134,18 @@ async function deleteFragment(ownerId, id) {
 
   try {
     const data = await ddbDocClient.send(new DeleteCommand(params));
-    
+
     if (!data.Attributes) {
-      logger.warn({ ownerId, id }, 'fragment not found in DynamoDB during deletion');
+      return {};   // Safe fallback
     }
-    
-    return data;
+
+    return data.Attributes;
   } catch (err) {
     logger.warn({ err, params }, 'error deleting fragment from DynamoDB');
     throw err;
   }
 }
 
-if (!data.Attributes) {
-  return {};
-}
-return data.Attributes;
 
 
 module.exports = {

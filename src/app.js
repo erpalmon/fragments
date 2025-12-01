@@ -72,12 +72,17 @@ app.use((_req, res) => {
 app.use((err, req, res, _next) => {
   const status = err.status || 500;
   const message = err.message || 'unable to process request';
-  if (status > 499) logger.error({ err }, 'Error processing request');
+
+  if (status > 499) {
+    logger.error({ err }, 'Error processing request');
+  }
+
   res.status(status).json({
     status: 'error',
     error: { code: status, message }
   });
 });
+
 
 
 // Create server instance
