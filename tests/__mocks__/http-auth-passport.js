@@ -1,7 +1,7 @@
 module.exports = jest.fn((strategy, callback) => {
   return {
     name: 'http',
-    authenticate: function(req, options) {
+    authenticate: function(req, _options) {
       const auth = req.headers.authorization;
       if (!auth) {
         return this.fail('No authorization header');

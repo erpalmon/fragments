@@ -7,15 +7,14 @@ const useBasicAuth = process.env.HTPASSWD_FILE;
 const isTestEnv = process.env.NODE_ENV === 'test';
 
 // In test environment, skip auth check
-if (!isTestEnv) {
-  if (useCognito && useBasicAuth) {
-    throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
-  }
-
-  if (!useCognito && !useBasicAuth) {
-    throw new Error('No authorization configuration found');
-  }
+if (useCognito && useBasicAuth) {
+  throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
 }
+
+if (!isTestEnv && !useCognito && !useBasicAuth) {
+  throw new Error('No authorization configuration found');
+}
+
 
 if (useCognito) {
   logger.info('Using AWS Cognito for authentication');

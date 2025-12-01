@@ -2,7 +2,7 @@
 const mockAuthorize = jest.fn((strategy) => (req, res, next) => next());
 
 module.exports = {
-  strategy: jest.fn(),
+  strategy: jest.fn(() => {}),
   authenticate: jest.fn(() => mockAuthorize('http')),
   authorize: mockAuthorize
 };

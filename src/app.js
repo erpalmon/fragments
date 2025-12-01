@@ -39,7 +39,7 @@ app.use(passport.initialize());
 app.use(require('./routes'));
 
 // public endpoints
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.json(
     createSuccessResponse({
@@ -64,17 +64,21 @@ app.get('/v1/', (req, res) => {
 });
 
 // 404
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json(createErrorResponse(404, 'not found'));
 });
 
 // error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const status = err.status || 500;
   const message = err.message || 'unable to process request';
   if (status > 499) logger.error({ err }, 'Error processing request');
-  res.status(status).json(createErrorResponse(status, message));
+  res.status(status).json({
+    status: 'error',
+    error: { code: status, message }
+  });
 });
+
 
 // Create server instance
 const server = (module.exports = app);

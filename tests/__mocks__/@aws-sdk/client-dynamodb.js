@@ -48,12 +48,12 @@ mockSend.mockImplementation((command) => {
 module.exports = {
   DynamoDBClient,
   DynamoDBDocumentClient: {
-    from: jest.fn((client) => ({
+    from: jest.fn((_client) => ({
       send: mockSend,
     })),
   },
   DynamoDBDocument: {
-    from: jest.fn((client) => ({
+    from: jest.fn((_client) => ({
       send: mockSend,
       put: jest.fn().mockImplementation((params) => mockSend(new PutCommand({ ...params, Item: params.Item || {} }))),
       get: jest.fn().mockImplementation((params) => mockSend(new GetCommand(params))),

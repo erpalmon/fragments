@@ -28,7 +28,8 @@ module.exports = async (req, res, next) => {
 
     // Build absolute Location
     const proto = req.headers['x-forwarded-proto'] || 'http';
-    const base = process.env.API_URL || `${proto}://${req.headers.host}`;
+    const host = req.headers.host || 'localhost:8080';
+    const base = process.env.API_URL || `${proto}://${host}`;
     const location = `${base}/v1/fragments/${fragment.id}`;
 
     req.log?.info({ id: fragment.id, type: fragment.type, size: fragment.size }, 'fragment created');

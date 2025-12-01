@@ -1,8 +1,6 @@
 const s3Client = require('./s3Client');
 const ddbDocClient = require('./ddbDocClient');
 const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const logger = require('../../../logger');
 
 // DynamoDB table name for fragments metadata
@@ -16,7 +14,8 @@ async function writeFragment(fragment) {
   };
 
   try {
-    return await ddbDocClient.send(new PutCommand(params));
+    await ddbDocClient.send(new PutCommand(params));
+    return fragment; // what tests expect
   } catch (err) {
     logger.warn({ err, params, fragment }, 'error writing fragment to DynamoDB');
     throw err;
@@ -100,7 +99,10 @@ async function listFragments(ownerId, expand = false) {
 
   try {
     const data = await ddbDocClient.send(new QueryCommand(params));
-    return !expand ? data?.Items?.map((item) => item.id) || [] : data?.Items || [];
+    if (!expand) {
+      return data?.Items?.map((item) => ({ id: item.id })) || [];
+    }
+    return data?.Items || [];
   } catch (err) {
     logger.error({ err, params }, 'error getting all fragments for user from DynamoDB');
     throw err;
@@ -144,6 +146,12 @@ async function deleteFragment(ownerId, id) {
     throw err;
   }
 }
+
+if (!data.Attributes) {
+  return {};
+}
+return data.Attributes;
+
 
 module.exports = {
   listFragments,

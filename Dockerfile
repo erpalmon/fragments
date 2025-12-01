@@ -16,7 +16,7 @@ ENV NODE_ENV=production \
     NPM_CONFIG_COLOR=false
 
 # Install required tools (unpinned versions)
-RUN apk add --no-cache curl jq
+RUN apk add --no-cache curl=8.5.0-r0 jq=1.7.1-r0
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
