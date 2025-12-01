@@ -3,7 +3,8 @@ FROM node:22.10-alpine AS deps
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --production
+# In your Dockerfile, update the apk add line:
+RUN apk add --no-cache curl=8.5.0-r0 bash=5.2.21-r0
 
 # ---------- app stage ----------
 FROM node:22.10-alpine AS app

@@ -76,21 +76,45 @@ app.use((err, req, res, next) => {
   res.status(status).json(createErrorResponse(status, message));
 });
 
-// Start the server if this file is run directly (not required/included as a module)
+// Create server instance
+const server = (module.exports = app);
+
+// Only start the server if this file is run directly (not required/imported)
 if (require.main === module) {
   const PORT = process.env.PORT || 8080;
-  const server = app.listen(PORT, () => {
-    logger.info(`Server running at http://localhost:${PORT}`);
+  
+  // Start the server with error handling
+  const listener = server.listen(PORT, '0.0.0.0', () => {
+    const { address, port } = listener.address();
+    logger.info(`Server running at http://${address === '::' ? 'localhost' : address}:${port}`);
   });
 
-  // Handle shutdown gracefully
+  // Handle server errors
+  listener.on('error', (error) => {
+    if (error.syscall !== 'listen') {
+      throw error;
+    }
+
+    switch (error.code) {
+      case 'EACCES':
+        logger.error(`Port ${PORT} requires elevated privileges`);
+        process.exit(1);
+        break;
+      case 'EADDRINUSE':
+        logger.error(`Port ${PORT} is already in use`);
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  });
+
+  // Handle graceful shutdown
   process.on('SIGTERM', () => {
     logger.info('SIGTERM signal received. Shutting down gracefully');
-    server.close(() => {
+    listener.close(() => {
       logger.info('Server closed');
       process.exit(0);
     });
   });
 }
-
-module.exports = app;
