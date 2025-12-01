@@ -1,7 +1,7 @@
 // src/auth/auth-middleware.js
 const passport = require('passport');
 const hash = require('../hash');
-// eslint-disable-next-line no-unused-vars
+ 
 const logger = require('../../src/logger');
 
 

@@ -1,7 +1,7 @@
 // src/auth/basic-auth.js
 const auth = require('http-auth');
 const authPassport = require('http-auth-passport');
-// eslint-disable-next-line no-unused-vars
+ 
 const logger = require('../logger');
 const createAuthMiddleware = require('./auth-middleware');
 
