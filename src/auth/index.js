@@ -6,44 +6,24 @@ const isTestEnv = process.env.NODE_ENV === 'test';
 const useCognito = process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID;
 const useBasicAuth = process.env.HTPASSWD_FILE;
 
-// This object will be assigned as module.exports at the very end
 let authModule;
 
-// 1️⃣ In test environment ALWAYS use a mock strategy that behaves like passport
+// ---------------------------------------------------------
+// 1️⃣ TEST ENVIRONMENT → USE BASIC AUTH (NOT MOCK STRATEGY)
+// ---------------------------------------------------------
 if (isTestEnv) {
-  logger.info('Using mock HTTP Basic Auth for tests');
+  logger.info('Test mode: forcing HTTP Basic Auth with in-memory validation');
 
-  // Passport-like mock strategy
-  const mockStrategy = {
-    name: 'http',
+  // Pretend a htpasswd file exists so basic-auth.js does not throw
+  process.env.HTPASSWD_FILE = 'test';
 
-    authenticate(req) {
-      const mode = req.headers['x-test-auth'];
-
-      // Simulate passport.error()
-      if (mode === 'error') {
-        return this.error(new Error('Test error'));
-      }
-
-      // Simulate passport.fail()
-      if (mode === 'fail') {
-        return this.fail();
-      }
-
-      // Default → passport.success(user)
-      return this.success({ email: 'test@example.com' });
-    }
-  };
-
-  authModule = {
-    strategy: () => mockStrategy,
-
-    // Passport normally calls the strategy; here we let tests drive behavior
-    authenticate: () => (req, res, next) => next(),
-  };
+  // Load basic-auth module which already has a test-mode implementation
+  authModule = require('./basic-auth');
 }
 
-// 2️⃣ Block invalid combinations (tests expect these errors)
+// ---------------------------------------------------------
+// 2️⃣ INVALID CONFIG CASES
+// ---------------------------------------------------------
 else if (useCognito && useBasicAuth) {
   throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
 }
@@ -52,7 +32,9 @@ else if (!useCognito && !useBasicAuth) {
   throw new Error('No authorization configuration found');
 }
 
-// 3️⃣ Choose real auth
+// ---------------------------------------------------------
+// 3️⃣ REAL AUTH MODES
+// ---------------------------------------------------------
 else if (useCognito) {
   logger.info('Using AWS Cognito for authentication');
   authModule = require('./cognito');
@@ -67,5 +49,5 @@ else {
   authModule = require('./basic-auth');
 }
 
-// Final exported value
+// Final export
 module.exports = authModule;
