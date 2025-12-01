@@ -1,27 +1,24 @@
 // src/auth/index.js
 const logger = require('../logger');
-const passport = require('passport');
 const { Strategy } = require('passport-strategy');
 
+// Detect environment
 const isTestEnv = process.env.NODE_ENV === 'test';
-const useCognito =
-  process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID;
+const useCognito = process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID;
 const useBasicAuth = process.env.HTPASSWD_FILE;
 
 let authModule;
 
-/**
- * ---------------------------------------------------------
- * 1️⃣ TEST ENVIRONMENT → always provide a FULL Passport Strategy
- * ---------------------------------------------------------
- */
+// ---------------------------------------------------------
+// 1️⃣ TEST ENVIRONMENT → provide a REAL Passport Strategy
+// ---------------------------------------------------------
 if (isTestEnv) {
   logger.info('Using mock HTTP Basic Auth for tests');
 
   class MockStrategy extends Strategy {
     constructor() {
       super();
-      this.name = 'http'; // IMPORTANT: passport requires a name
+      this.name = 'http';
     }
 
     authenticate(req) {
@@ -46,11 +43,9 @@ if (isTestEnv) {
   };
 }
 
-/**
- * ---------------------------------------------------------
- * 2️⃣ INVALID COMBINATIONS EXPECTED BY TESTS
- * ---------------------------------------------------------
- */
+// ---------------------------------------------------------
+// 2️⃣ INVALID CONFIG CASES
+// ---------------------------------------------------------
 else if (useCognito && useBasicAuth) {
   throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
 }
@@ -59,31 +54,14 @@ else if (!useCognito && !useBasicAuth) {
   throw new Error('No authorization configuration found');
 }
 
-/**
- * ---------------------------------------------------------
- * 3️⃣ COGNITO MODE
- * BUT — in test mode, tests DO NOT WANT real Cognito verifier
- * ---------------------------------------------------------
- */
+// ---------------------------------------------------------
+// 3️⃣ REAL MODES
+// ---------------------------------------------------------
 else if (useCognito) {
-  if (isTestEnv) {
-    logger.info('Mocking Cognito verifier in test environment');
-
-    authModule = {
-      strategy: () => ({ name: 'bearer' }),
-      authenticate: () => (req, res, next) => next(),
-    };
-  } else {
-    logger.info('Using AWS Cognito for authentication');
-    authModule = require('./cognito');
-  }
+  logger.info('Using AWS Cognito for authentication');
+  authModule = require('./cognito');
 }
 
-/**
- * ---------------------------------------------------------
- * 4️⃣ BASIC AUTH MODE
- * ---------------------------------------------------------
- */
 else {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('HTTP Basic Auth is not allowed in production');
@@ -93,4 +71,5 @@ else {
   authModule = require('./basic-auth');
 }
 
+// Final export
 module.exports = authModule;
