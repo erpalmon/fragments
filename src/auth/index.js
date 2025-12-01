@@ -10,26 +10,25 @@ const useBasicAuth = process.env.HTPASSWD_FILE;
 if (isTestEnv) {
   logger.info('Using mock HTTP Basic Auth for tests');
   module.exports = require('./basic-auth');
-  return;
-}
-
-// 2️⃣ Block invalid combinations (tests expect these errors)
-if (useCognito && useBasicAuth) {
-  throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
-}
-
-if (!useCognito && !useBasicAuth) {
-  throw new Error('No authorization configuration found');
-}
-
-// 3️⃣ Choose real auth
-if (useCognito) {
-  logger.info('Using AWS Cognito for authentication');
-  module.exports = require('./cognito');
 } else {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('HTTP Basic Auth is not allowed in production');
+  // 2️⃣ Block invalid combinations (tests expect these errors)
+  if (useCognito && useBasicAuth) {
+    throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
   }
-  logger.info('Using HTTP Basic Auth for development');
-  module.exports = require('./basic-auth');
+
+  if (!useCognito && !useBasicAuth) {
+    throw new Error('No authorization configuration found');
+  }
+
+  // 3️⃣ Choose real auth
+  if (useCognito) {
+    logger.info('Using AWS Cognito for authentication');
+    module.exports = require('./cognito');
+  } else {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('HTTP Basic Auth is not allowed in production');
+    }
+    logger.info('Using HTTP Basic Auth for development');
+    module.exports = require('./basic-auth');
+  }
 }
