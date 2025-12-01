@@ -1,35 +1,42 @@
 // src/auth/index.js
 const logger = require('../logger');
 
+// Detect environment
 const isTestEnv = process.env.NODE_ENV === 'test';
 const useCognito = process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID;
 const useBasicAuth = process.env.HTPASSWD_FILE;
 
-// 1️⃣ In test environment: FORCE basic-auth mock and STOP executing this file
+// This object will be assigned as module.exports at the very end
+let authModule;
+
+// 1️⃣ In test environment ALWAYS use mock basic-auth
 if (isTestEnv) {
   logger.info('Using mock HTTP Basic Auth for tests');
-  module.exports = require('./basic-auth');
-  // Stop evaluating the rest of the module
-  return;
+  authModule = require('./basic-auth');
 }
 
-// 2️⃣ Validate configuration (tests expect these errors)
-if (useCognito && useBasicAuth) {
+// 2️⃣ Block invalid combinations (tests expect these errors)
+else if (useCognito && useBasicAuth) {
   throw new Error('Cannot use both AWS Cognito and HTTP Basic Auth');
 }
 
-if (!useCognito && !useBasicAuth) {
+else if (!useCognito && !useBasicAuth) {
   throw new Error('No authorization configuration found');
 }
 
-// 3️⃣ Real runtime logic
-if (useCognito) {
+// 3️⃣ Choose real auth
+else if (useCognito) {
   logger.info('Using AWS Cognito for authentication');
-  module.exports = require('./cognito');
-} else {
+  authModule = require('./cognito');
+}
+
+else {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('HTTP Basic Auth is not allowed in production');
   }
   logger.info('Using HTTP Basic Auth for development');
-  module.exports = require('./basic-auth');
+  authModule = require('./basic-auth');
 }
+
+// Final exported value
+module.exports = authModule;
