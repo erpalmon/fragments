@@ -1,5 +1,5 @@
 // tests/unit/fragment.test.js
-const { readFragment, writeFragment, listFragments, deleteFragment } = require('../../src/model/data/aws');
+const { readFragment, writeFragment, listFragments, deleteFragment } = require('../../src/model/data');
 const Fragment = require('../../src/model/fragment');
 
 describe('Fragment class', () => {
@@ -7,37 +7,50 @@ describe('Fragment class', () => {
 
   beforeEach(() => {
     // Reset test data
-    testFragment = {
+    testFragment = new Fragment({
       ownerId: 'test-owner',
-      id: 'test-id',
-      created: new Date().toISOString(),
-      updated: new Date().toISOString(),
       type: 'text/plain',
-      size: 11 // "hello world".length
-    };
+    });
   });
 
   test('writeFragment() writes a fragment', async () => {
-    const result = await writeFragment(testFragment);
-    expect(result).toEqual(testFragment);
-  });
-
-  test('readFragment() returns what we write into the db', async () => {
-    await writeFragment(testFragment);
-    const result = await readFragment(testFragment.ownerId, testFragment.id);
+    await testFragment.save();
+    const result = await Fragment.byId(testFragment.ownerId, testFragment.id);
     expect(result).toMatchObject(testFragment);
   });
 
-  test('listFragments() returns all fragment ids for an owner', async () => {
-    await writeFragment(testFragment);
-    const ids = await listFragments(testFragment.ownerId);
-    expect(ids).toEqual([{ id: testFragment.id }]);
+  test('readFragment() returns what we write into the db', async () => {
+    await testFragment.save();
+    const result = await Fragment.byId(testFragment.ownerId, testFragment.id);
+    expect(result).toMatchObject(testFragment);
+  });
+
+  test('listFragments() returns all fragments for an owner', async () => {
+    await testFragment.save();
+    const fragments = await Fragment.byUser(testFragment.ownerId, true);
+    expect(fragments).toEqual(expect.arrayContaining([expect.objectContaining({
+      id: testFragment.id,
+      ownerId: testFragment.ownerId,
+      type: testFragment.type
+    })]));
   });
 
   test('deleteFragment() removes the fragment', async () => {
-    await writeFragment(testFragment);
-    await deleteFragment(testFragment.ownerId, testFragment.id);
-    const result = await readFragment(testFragment.ownerId, testFragment.id);
+    await testFragment.save();
+    const result = await Fragment.delete(testFragment.ownerId, testFragment.id);
     expect(result).toEqual({});
+    
+    const fragment = await Fragment.byId(testFragment.ownerId, testFragment.id);
+    expect(fragment).toEqual({});
+  });
+
+  test('setData() and getData() work with buffers', async () => {
+    const data = Buffer.from('hello world');
+    await testFragment.setData(data);
+    await testFragment.save();
+    
+    const result = await testFragment.getData();
+    expect(result).toEqual(data);
+    expect(testFragment.size).toBe(data.length);
   });
 });
