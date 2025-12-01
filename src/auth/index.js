@@ -1,5 +1,4 @@
 // src/auth/index.js
-const passport = require('passport');
 const { Strategy } = require('passport-strategy');
 const logger = require('../logger');
 
