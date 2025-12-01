@@ -32,7 +32,9 @@ app.use((req, res, next) => {
 });
 
 // Passport global initialization
-passport.use(auth.strategy());
+const strategy = auth.strategy();
+const strategyName = strategy.name || 'default';
+passport.use(strategyName, strategy);
 app.use(passport.initialize());
 
 // mount all routes
