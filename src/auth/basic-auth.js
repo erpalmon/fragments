@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === 'test') {
   strategy.name = 'http';
   
   module.exports.strategy = () => strategy;
-  module.exports.authenticate = () => (req, res, next) => next();
+  module.exports.authenticate = () => (_req, _res, next) => next();
 } else {
   const basic = auth.basic({
     file: process.env.HTPASSWD_FILE,
