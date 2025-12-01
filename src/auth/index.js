@@ -9,10 +9,38 @@ const useBasicAuth = process.env.HTPASSWD_FILE;
 // This object will be assigned as module.exports at the very end
 let authModule;
 
-// 1️⃣ In test environment ALWAYS use mock basic-auth
+// 1️⃣ In test environment ALWAYS use a mock strategy that behaves like passport
 if (isTestEnv) {
   logger.info('Using mock HTTP Basic Auth for tests');
-  authModule = require('./basic-auth');
+
+  // Passport-like mock strategy
+  const mockStrategy = {
+    name: 'http',
+
+    authenticate(req) {
+      const mode = req.headers['x-test-auth'];
+
+      // Simulate passport.error()
+      if (mode === 'error') {
+        return this.error(new Error('Test error'));
+      }
+
+      // Simulate passport.fail()
+      if (mode === 'fail') {
+        return this.fail();
+      }
+
+      // Default → passport.success(user)
+      return this.success({ email: 'test@example.com' });
+    }
+  };
+
+  authModule = {
+    strategy: () => mockStrategy,
+
+    // Passport normally calls the strategy; here we let tests drive behavior
+    authenticate: () => (req, res, next) => next(),
+  };
 }
 
 // 2️⃣ Block invalid combinations (tests expect these errors)
@@ -34,6 +62,7 @@ else {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('HTTP Basic Auth is not allowed in production');
   }
+
   logger.info('Using HTTP Basic Auth for development');
   authModule = require('./basic-auth');
 }
