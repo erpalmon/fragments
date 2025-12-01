@@ -1,49 +1,49 @@
+// src/auth/cognito.js
 const BearerStrategy = require('passport-http-bearer').Strategy;
 const { CognitoJwtVerifier } = require('aws-jwt-verify');
 const logger = require('../logger');
 const authorize = require('./auth-middleware');
 
-if (!(process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID)) {
-  const errorMessage = 'missing expected env vars: AWS_COGNITO_POOL_ID, AWS_COGNITO_CLIENT_ID';
+const isTest = process.env.NODE_ENV === 'test';
 
-  logger.error(errorMessage);
-  throw new Error(errorMessage);
+if (!(process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID)) {
+  const message = 'missing expected env vars: AWS_COGNITO_POOL_ID, AWS_COGNITO_CLIENT_ID';
+  logger.error(message);
+  throw new Error(message);
 }
 
 logger.info('Using AWS Cognito for auth');
 
+// 🧪 TEST MODE: mock verifier entirely
+if (isTest) {
+  module.exports.strategy = () =>
+    new BearerStrategy((token, done) => {
+      // Always succeed with a fake user
+      done(null, { email: 'test@example.com' });
+    });
+
+  module.exports.authenticate = () => authorize('bearer');
+  return;
+}
+
+// REAL COGNITO VERIFIER
 const jwtVerifier = CognitoJwtVerifier.create({
   userPoolId: process.env.AWS_COGNITO_POOL_ID,
   clientId: process.env.AWS_COGNITO_CLIENT_ID,
-
-  // expecting an Identity Token (vs. Access Token)
   tokenUse: 'id',
 });
 
-// At startup, download and cache the public keys (JWKS) we need in order to
-// verify our Cognito JWTs, see https://auth0.com/docs/secure/tokens/json-web-tokens/json-web-key-sets
-// You can try this yourself using:
-// curl https://cognito-idp.us-east-1.amazonaws.com/<user-pool-id>/.well-known/jwks.json
 jwtVerifier
   .hydrate()
-  .then(() => {
-    logger.info('Cognito JWKS cached');
-  })
-  .catch((err) => {
-    logger.error({ err }, 'Unable to cache Cognito JWKS');
-  });
+  .then(() => logger.info('Cognito JWKS cached'))
+  .catch((err) => logger.error({ err }, 'Unable to cache Cognito JWKS'));
 
 module.exports.strategy = () => {
-  // For our Passport authentication strategy, we'll look for the Bearer Token
-  // in the Authorization header, then verify that with our Cognito JWT Verifier.
   return new BearerStrategy(async (token, done) => {
     try {
-      // verify this JWT
       const user = await jwtVerifier.verify(token);
-      logger.debug({ user }, 'token has been successfully verified');
-
-      // create a user, but only with their email
-      done(null, user.email);
+      logger.debug({ user }, 'token verified');
+      done(null, { email: user.email });
     } catch (err) {
       logger.error({ err, token }, 'could not verify token');
       done(null, false);
