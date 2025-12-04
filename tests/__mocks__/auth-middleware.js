@@ -2,16 +2,24 @@
 const request = require('supertest');
 const app = require('../../src/app');
 
-// Mock the auth middleware
-jest.mock('../../src/auth/auth-middleware');
-
 // Mock the basic auth module
 jest.mock('../../src/auth/basic-auth', () => {
-  return {
+  const mockAuth = {
     strategy: jest.fn(),
-    authenticate: jest.fn()
-      .mockImplementation(() => (req, res, next) => next())
+    authenticate: jest.fn().mockImplementation(() => (req, res, next) => {
+      req.user = { id: 'test-user-id', email: 'test@example.com' };
+      next();
+    })
   };
+  return mockAuth;
+});
+
+// Mock the auth middleware
+jest.mock('../../src/auth/auth-middleware', () => {
+  return jest.fn((strategy) => (req, res, next) => {
+    req.user = { id: 'test-user-id', email: 'test@example.com' };
+    next();
+  });
 });
 
 describe('GET /v1/fragments', () => {

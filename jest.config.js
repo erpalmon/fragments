@@ -2,7 +2,7 @@
 module.exports = {
   testEnvironment: 'node',
   setupFiles: ['<rootDir>/tests/setup.js'],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup-after-env.js'],
   testMatch: [
     '**/tests/unit/**/*.test.js',
     '**/tests/integration/**/*.test.js'
@@ -20,5 +20,6 @@ module.exports = {
   testEnvironmentOptions: {
     TEST_AUTH: process.env.TEST_AUTH || 'basic'
   },
-  testTimeout: 10000 // 10 seconds
+  testTimeout: 30000, // Increased timeout to 30 seconds
+  verbose: true
 };

@@ -4,6 +4,7 @@ process.env.LOG_LEVEL = 'fatal';
 process.env.HTPASSWD_FILE = require('path').join(__dirname, 'fixtures/.htpasswd');
 process.env.AWS_DYNAMODB_TABLE_NAME = 'fragments-test';
 process.env.AWS_S3_BUCKET_NAME = 'test-bucket';
+process.env.TEST_AUTH = 'basic';
 
 // Clear AWS credentials and Cognito settings
 delete process.env.AWS_ACCESS_KEY_ID;
