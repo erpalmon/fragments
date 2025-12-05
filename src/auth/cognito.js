@@ -1,54 +1,47 @@
-// src/auth/cognito.js
 const BearerStrategy = require('passport-http-bearer').Strategy;
 const { CognitoJwtVerifier } = require('aws-jwt-verify');
 const logger = require('../logger');
-const authorize = require('./auth-middleware');
+const authorize = require('./authorize-middleware');
 
-// ---------------------------------------------------------
-// TEST MODE → Mock Cognito so tests do not hit AWS
-// ---------------------------------------------------------
-if (process.env.NODE_ENV === 'test') {
-  module.exports.strategy = () => ({ name: 'bearer' });
-  module.exports.authenticate = () => (req, res, next) => next();
-  return;
-}
-
-// ---------------------------------------------------------
-// PRODUCTION / DEV REAL COGNITO BELOW
-// ---------------------------------------------------------
-if (
-  !(process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID)
-) {
-  const errorMessage =
-    'missing expected env vars: AWS_COGNITO_POOL_ID, AWS_COGNITO_CLIENT_ID';
+// Validate required environment variables
+if (!(process.env.AWS_COGNITO_POOL_ID && process.env.AWS_COGNITO_CLIENT_ID)) {
+  const errorMessage = 'missing expected env vars: AWS_COGNITO_POOL_ID, AWS_COGNITO_CLIENT_ID';
   logger.error(errorMessage);
   throw new Error(errorMessage);
 }
 
-logger.info('Using AWS Cognito for auth');
-
+// Create a Cognito JWT Verifier to validate JWTs from users
 const jwtVerifier = CognitoJwtVerifier.create({
   userPoolId: process.env.AWS_COGNITO_POOL_ID,
   clientId: process.env.AWS_COGNITO_CLIENT_ID,
-  tokenUse: 'id',
+  tokenUse: 'id', // We expect an ID token
 });
 
-// preload JWKS
+// At startup, download and cache the public keys (JWKS) needed to verify JWTs
 jwtVerifier
   .hydrate()
-  .then(() => logger.info('Cognito JWKS cached'))
-  .catch((err) => logger.error({ err }, 'Unable to cache Cognito JWKS'));
+  .then(() => {
+    logger.info('Cognito JWKS cached');
+  })
+  .catch((err) => {
+    logger.error({ err }, 'Unable to cache Cognito JWKS');
+  });
 
-module.exports.strategy = () =>
-  new BearerStrategy(async (token, done) => {
+module.exports.strategy = () => {
+  // Use Bearer token strategy to validate JWT from Authorization header
+  return new BearerStrategy(async (token, done) => {
     try {
+      // Verify the JWT token
       const user = await jwtVerifier.verify(token);
-      logger.debug({ user }, 'token verified');
-      done(null, { email: user.email });
+      logger.debug({ user }, 'Token successfully verified');
+      
+      // Return just the email for the user
+      done(null, user.email);
     } catch (err) {
-      logger.error({ err, token }, 'could not verify token');
-      done(null, false);
+      logger.error({ err, token }, 'Could not verify token');
+      done(null, false); // Authentication failed
     }
   });
+};
 
 module.exports.authenticate = () => authorize('bearer');

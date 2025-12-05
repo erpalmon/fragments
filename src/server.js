@@ -1,44 +1,41 @@
 // src/server.js
 'use strict';
 
-require('dotenv').config();
-
-
-const app = require('./app');
 const logger = require('./logger');
+const stoppable = require('stoppable');
+const app = require('./app');
 
+// Get configuration from environment
 const PORT = parseInt(process.env.PORT || '8080', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
-// Start the HTTP server
-const server = app.listen(PORT, HOST, () => {
-  logger.info(
-    { host: HOST, port: PORT, env: process.env.NODE_ENV || 'development' },
-    'fragments API server listening'
-  );
-});
+// Create server with graceful shutdown
+const server = stoppable(
+  app.listen(PORT, HOST, () => {
+    logger.info(
+      { 
+        host: HOST, 
+        port: PORT, 
+        env: process.env.NODE_ENV || 'development' 
+      },
+      'Fragments API server started'
+    );
+  })
+);
 
-// Surface server errors
+// Handle server errors
 server.on('error', (err) => {
-  logger.error({ err }, 'server error');
+  logger.error({ err }, 'Server error');
   process.exit(1);
 });
 
-// Graceful shutdown for Ctrl+C / stop
-const shutdown = (signal) => {
-  logger.warn({ signal }, 'received shutdown signal, closing server...');
-  server.close((err) => {
-    if (err) {
-      logger.error({ err }, 'error during server close');
-      process.exit(1);
-    }
-    logger.info('server closed, exiting');
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received - starting graceful shutdown');
+  server.stop(() => {
+    logger.info('Server stopped');
     process.exit(0);
   });
-};
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+});
 
 module.exports = server;
-

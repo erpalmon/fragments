@@ -1,20 +1,64 @@
 // src/routes/api/get-by-id.js
 const { Fragment } = require('../../model/fragment');
 const { createErrorResponse } = require('../../response');
+const logger = require('../../logger');
 
 /**
- * Return the fragment's data by id.
- * A2: return the stored bytes with the fragment's Content-Type.
+ * Get raw fragment data by ID
+ * GET /v1/fragments/:id
  */
 module.exports = async (req, res) => {
-  try {
-    const fragment = await Fragment.byId(req.user, req.params.id);
-    const data = await fragment.getData();
+  const { id } = req.params;
+  const ownerId = req.user;
 
-    res.set('Content-Type', fragment.mimeType);
-    res.set('Cache-Control', 'no-cache');
+  logger.info({ id, ownerId }, `Fetching fragment data for ${id}`);
+
+  try {
+    // Get the fragment
+    const fragment = await Fragment.byId(ownerId, id);
+    
+    if (!fragment) {
+      logger.warn({ id, ownerId }, 'Fragment not found');
+      return res.status(404).json(
+        createErrorResponse(404, 'Fragment not found')
+      );
+    }
+
+    // Get the fragment data
+    const data = await fragment.getData();
+    logger.debug({ 
+      id, 
+      type: fragment.type, 
+      size: data.length 
+    }, 'Successfully retrieved fragment data');
+
+    // Set response headers
+    res.setHeader('Content-Type', fragment.type);
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    // For text content, set charset if not already specified
+    if (fragment.type.startsWith('text/') && !fragment.type.includes('charset')) {
+      res.setHeader('Content-Type', `${fragment.type}; charset=utf-8`);
+    }
+
+    // Return the raw fragment data
     return res.status(200).send(data);
-  } catch {
-    return res.status(404).json(createErrorResponse(404, 'Not found'));
+
+  } catch (err) {
+    logger.error({ 
+      err, 
+      fragmentId: id, 
+      ownerId 
+    }, 'Error fetching fragment data');
+
+    if (err.message.includes('not found')) {
+      return res.status(404).json(
+        createErrorResponse(404, 'Fragment not found')
+      );
+    }
+
+    return res.status(500).json(
+      createErrorResponse(500, 'Error retrieving fragment data')
+    );
   }
 };

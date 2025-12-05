@@ -3,54 +3,65 @@
 services:
   # Fragments microservice API server
   fragments:
+    container_name: fragments
+    restart: always
+    # use proper init process (tini)
     init: true
+    # build our docker image using Dockerfile
+    # and current directory as the build context
     build: .
 
     environment:
       # Our API will be running on http://localhost:8080
-      API_URL: http://localhost:8080
-
+      - API_URL=http://localhost:8080
       # Enable Basic Auth (required so service can start)
-      HTPASSWD_FILE: tests/.htpasswd
-      NODE_ENV: development   # <-- THIS FIXES THE CRASH
-
+      - HTPASSWD_FILE=tests/.htpasswd
+      - NODE_ENV=development
       # Logging
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-
-      # AWS + DynamoDB configuration
-      AWS_REGION: us-east-1
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-
-      # LocalStack S3 endpoint
-      AWS_S3_ENDPOINT_URL: http://localstack:4566
-
-      # DynamoDB Local endpoint
-      AWS_DYNAMODB_ENDPOINT_URL: http://dynamodb-local:8000
-
-      # Bucket + Table Names
-      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-fragments}
-      AWS_DYNAMODB_TABLE_NAME: ${AWS_DYNAMODB_TABLE_NAME:-fragments}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # AWS configuration
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      # Use the LocalStack endpoint vs. AWS for S3 AWS SDK clients.
+      # NOTE: we use Docker's internal network to the localstack container
+      - AWS_S3_ENDPOINT_URL=http://localstack:4566
+      # Use the DynamoDB local endpoint vs. AWS for DynamoDB AWS SDK clients.
+      - AWS_DYNAMODB_ENDPOINT_URL=http://dynamodb-local:8000
+      # This S3 bucket and DynamoDB table need to get created first, see
+      # local-aws-setup.sh. We'll default to 'fragments' as the name, unless
+      # something else is defined in the env.
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-fragments}
+      - AWS_DYNAMODB_TABLE_NAME=${AWS_DYNAMODB_TABLE_NAME:-fragments}
 
     ports:
-      - "8080:8080"
-
+      - '8080:8080'
     depends_on:
       - dynamodb-local
       - localstack
 
-  # DynamoDB Local
+  # DynamoDB Local, see: https://hub.docker.com/r/amazon/dynamodb-local
   dynamodb-local:
+    container_name: dynamodb
     image: amazon/dynamodb-local
     ports:
-      - "8000:8000"
+      - '8000:8000'
+    # Run the database in memory, see:
+    # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.UsageNotes.html
     command: ['-jar', 'DynamoDBLocal.jar', '-inMemory']
 
-  # LocalStack for S3 + DynamoDB dependencies
+  # LocalStack for S3, see https://docs.localstack.cloud/get-started/#docker-compose
+  # Interact via awscli-local, see https://docs.localstack.cloud/integrations/aws-cli/#installation
   localstack:
+    container_name: localstack
+    # https://hub.docker.com/r/localstack/localstack
     image: localstack/localstack
     ports:
-      - "4566:4566"
+      - '4566:4566'
     environment:
-      SERVICES: s3,dynamodb,iam
-      DEFAULT_REGION: us-east-1
+      # See https://docs.localstack.cloud/localstack/configuration/ and
+      # https://hub.docker.com/r/localstack/localstack for config details.
+      # We only want to run S3 (removed dynamodb since we're using dynamodb-local)
+      - SERVICES=s3
+      # We're always working in us-east-1
+      - DEFAULT_REGION=us-east-1

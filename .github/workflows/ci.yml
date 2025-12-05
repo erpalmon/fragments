@@ -1,28 +1,27 @@
-name: ci
+name: CI
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main, hbahoo-fragments]
+
+env:
+  NODE_ENV: test
+  CI: true
 
 jobs:
-  # ============================================================
-  # 1️⃣ ESLint Job - Lint our JavaScript code
-  # ============================================================
   lint:
-    name: ESLint
+    name: Lint and Format
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: '18'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
@@ -32,121 +31,110 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-  # ============================================================
-  # 2️⃣ Dockerfile Lint Job - Lint Dockerfile using Hadolint
-  # ============================================================
   dockerfile-lint:
-    name: Dockerfile Lint
+    name: Lint Dockerfile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
-          failure-threshold: warning
 
-  # ============================================================
-  # 3️⃣ Unit Tests
-  # ============================================================
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: '18'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies and run tests
         run: npm install-ci-test
 
-      # ⭐⭐⭐ ADDED — Upload npm logs when the test step fails ⭐⭐⭐
-      - name: Upload npm logs
-        if: failure()
+      - name: Upload test coverage
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: npm-logs
-          path: /home/runner/.npm/_logs/
+          name: coverage
+          path: coverage
+          retention-days: 7
 
-  # ============================================================
-  # 4️⃣ Docker Hub Build + Push
-  # ============================================================
-  docker-hub:
-    name: Build and Push to Docker Hub
-    needs: [lint, dockerfile-lint, unit-tests]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push
-        env:
-          DOCKERHUB_REPO: erpalmon/fragments
-          SHA_TAG: sha-${{ github.sha }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_REPO }}:${{ env.SHA_TAG }}
-            ${{ env.DOCKERHUB_REPO }}:main
-            ${{ env.DOCKERHUB_REPO }}:latest
-
-  # ============================================================
-  # 5️⃣ Integration Tests
-  # ============================================================
   integration-tests:
     name: Integration Tests
     needs: [lint, dockerfile-lint, unit-tests]
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: '18'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Install node dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Enable Docker Compose
-        run: docker compose version
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
 
-      - name: Start Docker Containers (fragments + localstack + dynamodb)
-        run: docker compose up -d --build
+      - name: Start Docker services
+        run: docker compose up -d
 
-      - name: Wait for containers to fully start
-        run: sleep 10
-
-      - name: Make setup script executable
-        run: chmod +x ./scripts/local-aws-setup.sh
-
-      - name: Setup Local AWS Resources (create bucket + table)
+      - name: Setup test environment
         run: ./scripts/local-aws-setup.sh
 
-      - name: Run Hurl Integration Tests
+      - name: Run integration tests
         run: npm run test:integration
 
-      - name: Shutdown Containers
-        if: always()
-        run: docker compose down
+  docker-build:
+    name: Build and Push to Docker Hub
+    needs: [lint, dockerfile-lint, unit-tests, integration-tests]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/hbahoo-fragments'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/fragments
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,format=long
+            type=sha,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

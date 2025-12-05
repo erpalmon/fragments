@@ -1,26 +1,47 @@
-// src/auth/auth-middleware.js
 const passport = require('passport');
-const hash = require('../hash');
+const { createErrorResponse } = require('../response');
 const logger = require('../logger');
 
-module.exports = (strategyName) => {
+function createAuthMiddleware(strategy) {
   return function (req, res, next) {
-    passport.authenticate(strategyName, { session: false }, (err, user) => {
-      if (err) {
-        logger.warn({ err }, 'error authenticating user');
-        return next({ status: 500, message: 'Unable to authenticate user' });
-      }
+    // Ensure passport is properly initialized
+    if (!passport._strategy(strategy)) {
+      logger.error({ strategy }, 'Passport strategy not found');
+      return res.status(500).json({
+        status: 'error',
+        error: {
+          code: 500,
+          message: 'Authentication strategy not configured'
+        }
+      });
+    }
 
-      if (!user) {
-        logger.warn('401 Unauthorized');
-        return res.status(401).json({ 
-          status: 401, 
-          message: 'Unauthorized' 
+    return passport.authenticate(strategy, { session: false }, (err, user) => {
+      if (err) {
+        logger.warn({ err }, 'Error authenticating user');
+        return res.status(500).json({
+          status: 'error',
+          error: {
+            code: 500,
+            message: 'Unable to authenticate user'
+          }
         });
       }
-
-      req.user = hash(user.email);
+      if (!user) {
+        logger.warn('401 Unauthorized - No user');
+        return res.status(401).json({
+          status: 'error',
+          error: {
+            code: 401,
+            message: 'Unauthorized'
+          }
+        });
+      }
+      req.user = user;
+      logger.debug({ userId: user.id }, 'User authenticated');
       next();
     })(req, res, next);
   };
-};
+}
+
+module.exports = createAuthMiddleware;

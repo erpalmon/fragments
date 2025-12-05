@@ -1,21 +1,18 @@
 // src/app.js
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const passport = require('passport');
-
 const { author, version } = require('../package.json');
 const logger = require('./logger');
 const pino = require('pino-http')({ logger });
-
 const auth = require('./auth');
 const { createSuccessResponse, createErrorResponse } = require('./response');
 
 const app = express();
 
-// global middleware
+// Global middleware
 app.use(pino);
 app.use(helmet());
 app.use(cors());
@@ -32,16 +29,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Passport global initialization
-const strategy = auth.strategy();
-const strategyName = strategy.name || 'default';
-passport.use(strategyName, strategy);
+// Passport initialization
+passport.use(auth.strategy, auth.basicAuth);
 app.use(passport.initialize());
 
-// mount all routes
+// Mount all routes
 app.use(require('./routes'));
 
-// public endpoints
+// Public endpoints
 app.get('/', (_req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.json(
@@ -54,24 +49,12 @@ app.get('/', (_req, res) => {
   );
 });
 
-app.get('/v1/', (req, res) => {
-  res.set('Cache-Control', 'no-cache');
-  res.json(
-    createSuccessResponse({
-      status: 'ok',
-      version,
-      author,
-      githubUrl: 'https://github.com/erpalmon/fragments',
-    })
-  );
-});
-
-// 404
+// 404 handler
 app.use((_req, res) => {
   res.status(404).json(createErrorResponse(404, 'not found'));
 });
 
-// error handler
+// Error handler
 app.use((err, req, res, _next) => {
   const status = err.status || 500;
   const message = err.message || 'unable to process request';
@@ -86,47 +69,4 @@ app.use((err, req, res, _next) => {
   });
 });
 
-
-
-// Create server instance
-const server = (module.exports = app);
-
-// Only start the server if this file is run directly (not required/imported)
-if (require.main === module) {
-  const PORT = process.env.PORT || 8080;
-  
-  // Start the server with error handling
-  const listener = server.listen(PORT, '0.0.0.0', () => {
-    const { address, port } = listener.address();
-    logger.info(`Server running at http://${address === '::' ? 'localhost' : address}:${port}`);
-  });
-
-  // Handle server errors
-  listener.on('error', (error) => {
-    if (error.syscall !== 'listen') {
-      throw error;
-    }
-
-    switch (error.code) {
-      case 'EACCES':
-        logger.error(`Port ${PORT} requires elevated privileges`);
-        process.exit(1);
-        break;
-      case 'EADDRINUSE':
-        logger.error(`Port ${PORT} is already in use`);
-        process.exit(1);
-        break;
-      default:
-        throw error;
-    }
-  });
-
-  // Handle graceful shutdown
-  process.on('SIGTERM', () => {
-    logger.info('SIGTERM signal received. Shutting down gracefully');
-    listener.close(() => {
-      logger.info('Server closed');
-      process.exit(0);
-    });
-  });
-}
+module.exports = app;

@@ -14,36 +14,48 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,md}\""
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HumamBahoo/fragments.git"
+  },
+  "author": "Humam Bahoo",
+  "license": "UNLICENSED",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.x",
-    "@aws-sdk/client-s3": "^3.x",
-    "@aws-sdk/lib-dynamodb": "^3.x",
+    "@aws-sdk/client-dynamodb": "^3.309.0",
+    "@aws-sdk/client-s3": "^3.303.0",
+    "@aws-sdk/lib-dynamodb": "^3.309.0",
     "aws-jwt-verify": "^5.1.1",
     "compression": "^1.7.4",
+    "content-type": "^1.0.5",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "helmet": "^7.0.0",
+    "html-to-text": "^9.0.5",
     "http-auth": "^4.1.4",
-    "http-auth-passport": "^1.0.7",
+    "http-auth-passport": "^1.0.4",
     "markdown-it": "^14.1.0",
     "passport": "^0.6.0",
+    "passport-http": "^0.3.0",
     "passport-http-bearer": "^1.0.1",
-    "pino": "^8.10.0",
+    "pino": "^8.21.0",
     "pino-http": "^8.3.3",
-    "pino-pretty": "^9.3.0"
+    "pino-pretty": "^9.4.1",
+    "sharp": "^0.32.6",
+    "stoppable": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/plugin-transform-runtime": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
     "@babel/runtime": "^7.28.4",
+    "@orangeopensource/hurl": "^7.1.0",
     "@types/jest": "^29.4.0",
     "babel-jest": "^30.2.0",
     "eslint": "^8.34.0",
     "jest": "^29.4.3",
-    "nodemon": "^2.0.20",
+    "nodemon": "^3.1.11",
     "prettier": "2.8.4",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.4"
   }
 }

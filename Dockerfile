@@ -1,31 +1,60 @@
-# ---------- deps stage ----------
-FROM node:22.10-alpine AS deps
-WORKDIR /app
+# Stage 01: install dependencies
+FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea AS dependencies
 
-COPY package*.json ./
-# In your Dockerfile, update the apk add line:
-RUN apk add --no-cache curl=8.5.0-r0 bash=5.2.21-r0
+# Define node env to install prod dependencies only
+ENV NODE_ENV=production
 
-# ---------- app stage ----------
-FROM node:22.10-alpine AS app
-WORKDIR /app
+# Define work directory for our app
+WORKDIR /fragments
 
-ENV NODE_ENV=production \
-    PORT=8080 \
-    NPM_CONFIG_LOGLEVEL=warn \
-    NPM_CONFIG_COLOR=false
+# Copy package files
+COPY package.json package-lock.json ./
 
-# Install required tools (unpinned versions)
-RUN apk add --no-cache curl=8.5.0-r0 jq=1.7.1-r0
+# Configure npm
+ENV NPM_CONFIG_LOGLEVEL=warn
+ENV NPM_CONFIG_COLOR=false
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY package*.json ./
+# Install dependencies
+RUN npm ci
+
+# Stage 02: setup our app
+FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea AS setup
+
+WORKDIR /fragments
+
+# Copy the generated node_modules from the dependencies stage
+COPY --from=dependencies /fragments/node_modules ./node_modules
+
+# Copy source code and configuration
 COPY src ./src
 COPY tests/.htpasswd ./tests/.htpasswd
+COPY package*.json ./
 
+# Stage 03: run our app
+FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea
+
+# Set image metadata
+LABEL maintainer="Your Name <your.email@example.com>"
+LABEL description="Fragments node.js microservice"
+
+WORKDIR /fragments
+
+# Copy everything from the setup stage
+COPY --from=setup /fragments ./
+
+# Install curl for healthcheck
+RUN apk --no-cache --update add curl
+
+# Environment variables
+ENV PORT=8080
+ENV NODE_ENV=production
+
+# Expose port
 EXPOSE 8080
 
-HEALTHCHECK --interval=15s --timeout=30s --start-period=10s --retries=3 \
-  CMD curl --fail http://localhost:8080/ || exit 1
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl --fail http://localhost:8080 || exit 1
 
-CMD ["npm", "start"]
+# Command to run the application
+CMD ["node", "src/index.js"]

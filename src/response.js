@@ -1,31 +1,30 @@
 // src/response.js
 
 /**
- * A successful response looks like:
- *
- * {
- *   "status": "ok",
- *   ...
- * }
+ * Creates a standardized success response
+ * @param {Object} [data={}] - Optional data to include in the response
+ * @returns {Object} Standardized success response
+ * @example
+ * // returns { status: 'ok', id: 1 }
+ * createSuccessResponse({ id: 1 })
  */
-module.exports.createSuccessResponse = function (data) {
+module.exports.createSuccessResponse = (data = {}) => {
   return {
     status: 'ok',
-    ...(data || {}), // “spread” the key/value pairs from `data` into the object
+    ...data,
   };
 };
+
 /**
- * An error response looks like:
- *
- * {
- *   "status": "error",
- *   "error": {
- *     "code": 400,
- *     "message": "invalid request, missing ...",
- *   }
- * }
+ * Creates a standardized error response
+ * @param {number} code - HTTP status code
+ * @param {string} message - Error message
+ * @returns {Object} Standardized error response
+ * @example
+ * // returns { status: 'error', error: { code: 400, message: 'Bad request' } }
+ * createErrorResponse(400, 'Bad request')
  */
-module.exports.createErrorResponse = function (code, message) {
+module.exports.createErrorResponse = (code, message) => {
   return {
     status: 'error',
     error: {

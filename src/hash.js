@@ -1,14 +1,16 @@
-// src/hash.js
+//src/hash.js
+
 const { createHash } = require('crypto');
 
 /**
- * Hash the email to store it in a privacy-preserving way
- * @param {string} email
- * @returns {string} hashed email
+ * Hashes an email address for privacy-preserving storage
+ * @param {string} email - The email address to hash
+ * @returns {string} SHA-256 hash of the email in hex format
+ * @throws {Error} If email is not provided
  */
 function hash(email) {
   if (!email) {
-    throw new Error('Email is required');
+    throw new Error('Email is required for hashing');
   }
   return createHash('sha256').update(email).digest('hex');
 }

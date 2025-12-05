@@ -1,0 +1,18 @@
+const passport = require('passport');
+
+// Mock Passport's _strategy method
+passport._strategy = jest.fn().mockImplementation((name) => {
+  return name === 'basic' ? {} : null;
+});
+
+// Mock authenticate method
+passport.authenticate = jest.fn().mockImplementation((strategy, options, callback) => {
+  return (req, res, next) => {
+    if (typeof callback === 'function') {
+      return callback(null, req.user, {});
+    }
+    return next();
+  };
+});
+
+module.exports = passport;

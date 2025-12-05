@@ -1,23 +1,21 @@
 // src/logger.js
 const pino = require('pino');
 
+// Set log level from environment or default to 'info'
 const level = process.env.LOG_LEVEL || 'info';
-const usePretty = process.env.LOG_PRETTY === 'true';
+const options = { level };
 
-// If LOG_PRETTY is true, format logs for humans with pino-pretty.
-// Otherwise, emit raw JSON (best for production/log aggregators).
-module.exports = pino(
-  usePretty
-    ? {
-        level,
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'yyyy-mm-dd HH:MM:ss.l',
-            ignore: 'pid,hostname', // optional: slimmer output
-          },
-        },
-      }
-    : { level }
-);
+// Enable pretty printing in development or when explicitly requested
+if (process.env.NODE_ENV === 'development' || level === 'debug') {
+  options.transport = {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'yyyy-mm-dd HH:MM:ss.l',
+      ignore: 'pid,hostname,req,res', // Cleaner output
+    },
+  };
+}
+
+// Export configured logger instance
+module.exports = pino(options);

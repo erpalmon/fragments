@@ -1,37 +1,23 @@
-// src/routes/api/index.js
 const express = require('express');
-const contentType = require('content-type');
-const { Fragment } = require('../../model/fragment');
-
 const router = express.Router();
+const { Fragment } = require('../../../src/model/fragment');
+const { createSuccessResponse } = require('../../response');
 
-// GET /v1/fragments (list)
-router.get('/fragments', require('./get'));
-
-// --- Put specific routes FIRST ---
-router.get('/fragments/:id/info', require('./get-by-id-info'));  // metadata
-router.get('/fragments/:id.:ext', require('./get-by-id-ext'));   // conversion
-router.get('/fragments/:id', require('./get-by-id'));            // raw data
-router.delete('/fragments/:id', require('./delete'));            // delete
-
-// Raw body parser (Buffer for supported types)
-const rawBody = () =>
-  express.raw({
-    inflate: true,
-    limit: '5mb',
-    type: (req) => {
-      try {
-        const { type } = contentType.parse(req);
-        return Fragment.isSupportedType(type);
-      } catch {
-        return false;
-      }
-    },
-  });
-
-// POST /v1/fragments (create)
-router.post('/fragments', rawBody(), require('./post'));
-
-router.delete('/fragments/:id', require('./delete'));
+// POST /v1/fragments
+router.post('/', async (req, res) => {
+  try {
+    const fragment = new Fragment({
+      ownerId: req.user.id,
+      type: req.get('Content-Type') || 'text/plain',
+      size: parseInt(req.get('Content-Length') || '0')
+    });
+    await fragment.save();
+    await fragment.setData(req.body);
+    res.set('Location', `${process.env.API_URL}/v1/fragments/${fragment.id}`);
+    res.status(201).json(createSuccessResponse({ fragment }));
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
+  }
+});
 
 module.exports = router;

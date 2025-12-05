@@ -4,24 +4,25 @@ const contentType = require('content-type');
 const {
   readFragment,
   writeFragment,
-  deleteFragment,
   readFragmentData,
   writeFragmentData,
   listFragments,
+  deleteFragment,
 } = require('./data');
 
 class Fragment {
-  constructor({ id, ownerId, type, size = 0, created, updated }) {
-    if (!ownerId) throw new Error('ownerId is required');
-    if (!type) throw new Error('type is required');
+  constructor({ id, ownerId, created, updated, type, size = 0 }) {
+    if (!ownerId) {
+      throw new Error('missing parameter: ownerId');
+    }
+    if (!type) {
+      throw new Error('missing parameter: type');
+    }
     if (typeof size !== 'number' || size < 0) {
       throw new Error('size must be a non-negative number');
     }
-
-    // Validate supported type
-    const base = Fragment._baseMime(type);
-    if (!Fragment.isSupportedType(base)) {
-      throw new Error('Unsupported type');
+    if (!Fragment.isSupportedType(type)) {
+      throw new Error(`unsupported fragment type: ${type}`);
     }
 
     this.id = id || randomUUID();
@@ -32,59 +33,97 @@ class Fragment {
     this.updated = updated || new Date().toISOString();
   }
 
-  // Extract clean MIME
-  static _baseMime(value) {
-    return contentType.parse(value).type.toLowerCase();
+  static async byUser(ownerId, expand = false) {
+    try {
+      const fragments = await listFragments(ownerId, expand);
+      if (!fragments) {
+        throw new Error('No fragments found for user');
+      }
+      return expand ? fragments.map(f => new Fragment(f)) : fragments;
+    } catch (err) {
+      throw new Error(`Error retrieving user fragments: ${err.message}`);
+    }
+  }
+
+  static async byId(ownerId, id) {
+    try {
+      const fragment = await readFragment(ownerId, id);
+      if (!fragment) {
+        throw new Error('Fragment not found');
+      }
+      return new Fragment(fragment);
+    } catch (err) {
+      throw new Error(`Error retrieving fragment: ${err.message}`);
+    }
   }
 
   static isSupportedType(value) {
     try {
-      const base = Fragment._baseMime(value);
-      return base === 'application/json' || base.startsWith('text/');
+      const { type } = contentType.parse(value);
+      const validTypes = [
+        'text/plain',
+        'text/markdown',
+        'text/html',
+        'application/json',
+        'image/png',
+        'image/jpeg',
+        'image/webp',
+        'image/gif',
+      ];
+      return validTypes.includes(type);
     } catch {
       return false;
     }
   }
 
-  static async byUser(ownerId, expand = false) {
-    const fragments = await listFragments(ownerId, expand);
-    return expand ? fragments.map((f) => new Fragment(f)) : fragments;
-  }
-
-  static async byId(ownerId, id) {
-    const data = await readFragment(ownerId, id);
-    return data ? new Fragment(data) : {};
-  }
-
   static async delete(ownerId, id) {
     try {
       await deleteFragment(ownerId, id);
-    } catch {
-      // ignore errors, tests expect {}
+      return;
+    } catch (err) {
+      throw new Error(`Error deleting fragment: ${err.message}`);
     }
-    return {};
   }
 
   async save() {
-    this.updated = new Date().toISOString();
-    await writeFragment(this);
-    return this;
+    try {
+      this.updated = new Date().toISOString();
+      await writeFragment(this);
+      return this;
+    } catch (err) {
+      throw new Error(`Error saving fragment: ${err.message}`);
+    }
   }
 
   async getData() {
-    return readFragmentData(this.ownerId, this.id);
+    try {
+      const data = await readFragmentData(this.ownerId, this.id);
+      if (!data) {
+        throw new Error('Fragment data not found');
+      }
+      return data;
+    } catch (err) {
+      throw new Error(`Error retrieving fragment data: ${err.message}`);
+    }
   }
 
   async setData(data) {
-    if (!Buffer.isBuffer(data)) throw new Error('Data must be a Buffer');
-    this.size = data.length;
-    this.updated = new Date().toISOString();
-    await writeFragment(this);
-    await writeFragmentData(this.ownerId, this.id, data);
+    if (!Buffer.isBuffer(data)) {
+      throw new Error('Data must be a Buffer');
+    }
+    try {
+      this.size = data.length;
+      this.updated = new Date().toISOString();
+      await writeFragment(this);
+      await writeFragmentData(this.ownerId, this.id, data);
+    } catch (err) {
+      throw new Error(`Error setting fragment data: ${err.message}`);
+    }
   }
 
   get mimeType() {
-    return Fragment._baseMime(this.type);
+    const { type } = contentType.parse(this.type);
+    return type;
   }
 
   get isText() {
@@ -92,10 +131,24 @@ class Fragment {
   }
 
   get formats() {
-    if (this.mimeType === 'text/markdown') {
-      return ['text/html'];
+    const type = this.mimeType;
+    switch (type) {
+      case 'text/plain':
+        return ['text/plain'];
+      case 'text/markdown':
+        return ['text/markdown', 'text/html', 'text/plain'];
+      case 'text/html':
+        return ['text/html', 'text/plain'];
+      case 'application/json':
+        return ['application/json', 'text/plain'];
+      case 'image/png':
+      case 'image/jpeg':
+      case 'image/webp':
+      case 'image/gif':
+        return ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+      default:
+        return [type];
     }
-    return [this.mimeType];
   }
 
   toJSON() {

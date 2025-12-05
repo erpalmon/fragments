@@ -1,27 +1,19 @@
-// src/model/data/aws/ddbDocClient.js
-
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-// Helper library for working with converting DynamoDB types to/from JS
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
-
 const logger = require('../../../logger');
 
 /**
- * If AWS credentials are configured in the environment, use them. Normally when we connect to DynamoDB from a deployment in AWS, we won't bother with this.  But if you're testing locally, you'll need
- * these, or if you're connecting to LocalStack or DynamoDB Local
+ * If AWS credentials are configured in the environment, use them.
  * @returns Object | undefined
  */
 const getCredentials = () => {
   if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-    // See https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-dynamodb/interfaces/dynamodbclientconfig.html#credentials
     const credentials = {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      // Optionally include the AWS Session Token, too (e.g., if you're connecting to AWS from your laptop).
-      // Not all situations require this, so we won't check for it above, just use it if it is present.
       sessionToken: process.env.AWS_SESSION_TOKEN,
     };
-    logger.debug('Using extra DynamoDB Credentials');
+    logger.debug('Using extra DynamoDB credentials');
     return credentials;
   }
 };
@@ -32,34 +24,25 @@ const getCredentials = () => {
  */
 const getDynamoDBEndpoint = () => {
   if (process.env.AWS_DYNAMODB_ENDPOINT_URL) {
-    logger.debug(
-      { endpoint: process.env.AWS_DYNAMODB_ENDPOINT_URL },
-      'Using alternate DynamoDB endpoint'
-    );
+    logger.debug({ endpoint: process.env.AWS_DYNAMODB_ENDPOINT_URL }, 'Using alternate DynamoDB endpoint');
     return process.env.AWS_DYNAMODB_ENDPOINT_URL;
   }
 };
 
-// Create a DynamoDB client
 const ddbClient = new DynamoDBClient({
   region: process.env.AWS_REGION,
   endpoint: getDynamoDBEndpoint(),
   credentials: getCredentials(),
 });
 
-// Create the DynamoDB Document Client with the correct marshalling options
 const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
   marshallOptions: {
-    // Whether to automatically convert empty strings, blobs, and sets to `null`
-    convertEmptyValues: false, // false, by default
-    // Whether to remove undefined values while marshalling
-    removeUndefinedValues: false, // false, by default
-    // Whether to convert typeof object to map attribute
-    convertClassInstanceToMap: false, // false, by default
+    convertEmptyValues: false,
+    removeUndefinedValues: false,
+    convertClassInstanceToMap: true, // Changed to true for LocalStack
   },
   unmarshallOptions: {
-    // Whether to return numbers as a string instead of converting them to native JavaScript numbers
-    wrapNumbers: false, // false, by default
+    wrapNumbers: false,
   },
 });
 

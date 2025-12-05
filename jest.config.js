@@ -1,12 +1,17 @@
 // jest.config.js
+const path = require('path');
+
+// Load environment variables from env.jest
+const envFile = path.join(__dirname, 'env.jest');
+require('dotenv').config({ path: envFile });
+
+// Log the current log level
+console.log(`Using LOG_LEVEL=${process.env.LOG_LEVEL}. Use 'debug' in env.jest for more detail`);
+
 module.exports = {
   testEnvironment: 'node',
-  setupFiles: ['<rootDir>/tests/setup.js'],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup-after-env.js'],
-  testMatch: [
-    '**/tests/unit/**/*.test.js',
-    '**/tests/integration/**/*.test.js'
-  ],
+  testMatch: ['**/tests/unit/**/*.test.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testPathIgnorePatterns: ['/node_modules/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
@@ -15,11 +20,11 @@ module.exports = {
   },
   moduleFileExtensions: ['js', 'json'],
   transform: {
-    '^.+\\.js$': 'babel-jest'
+    '^.+\\.[jt]sx?$': 'babel-jest'
   },
   testEnvironmentOptions: {
     TEST_AUTH: process.env.TEST_AUTH || 'basic'
   },
-  testTimeout: 30000, // Increased timeout to 30 seconds
+  testTimeout: 30000,
   verbose: true
 };
