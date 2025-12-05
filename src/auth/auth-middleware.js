@@ -1,6 +1,7 @@
 // src/auth/auth-middleware.js
 const passport = require('passport');
 const logger = require('../logger');
+const hash = require('../hash');
 
 function createAuthMiddleware(strategy) {
   return function (req, res, next) {
@@ -34,11 +35,13 @@ function createAuthMiddleware(strategy) {
         ? Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')[0]
         : undefined;
 
+      const rawId = user?.email || user?.id || basicUser || user;
       req.user = {
         ...(typeof user === 'object' ? user : {}),
-        id: user?.id || basicUser || user,
+        rawId,
+        id: hash(String(rawId || '')),
       };
-      logger.debug({ userId: user.id }, 'User authenticated');
+      logger.debug({ userId: req.user.id }, 'User authenticated');
       next();
     });
 

@@ -76,7 +76,7 @@ router.post('/fragments', async (req, res, next) => {
     await fragment.setData(req.body);
     const responseFragment = {
       ...fragment.toObject(),
-      ownerId: contentType.includes('charset') ? fragment.ownerId : req.user.rawId,
+      ownerId: fragment.ownerId,
     };
 
     res.set('Location', buildLocation(req, fragment.id));

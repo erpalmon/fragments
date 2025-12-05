@@ -1,6 +1,7 @@
 // tests/unit/fragment-post.test.js
 import request from 'supertest';
 import { jest } from '@jest/globals';
+import { createHash } from 'crypto';
 import app from '../../src/app.js';
 
 // Mock the auth middleware
@@ -87,6 +88,7 @@ describe('POST /v1/fragments', () => {
       .set('Content-Type', 'text/plain')
       .send('test data');
 
-    expect(res.body.fragment.ownerId).toBe('user1@example.com');
+    const expectedOwnerId = createHash('sha256').update('user1@example.com').digest('hex');
+    expect(res.body.fragment.ownerId).toBe(expectedOwnerId);
   });
 });

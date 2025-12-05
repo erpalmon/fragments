@@ -2,6 +2,7 @@
 import { jest } from '@jest/globals';
 import passport from 'passport';
 import { createAuthMiddleware } from '../../src/auth/middleware.js';
+import hash from '../../src/hash.js';
 import { TEST_USER } from '../../tests/setup.js';
 
 describe('Auth Middleware', () => {
@@ -49,7 +50,11 @@ describe('Auth Middleware', () => {
     await middleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
-    expect(req.user).toEqual(mockUser);
+    expect(req.user).toEqual({
+      ...mockUser,
+      rawId: TEST_USER.email,
+      id: hash(TEST_USER.email),
+    });
   });
 
   test('should return 401 when authentication fails', async () => {
