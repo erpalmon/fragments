@@ -21,6 +21,7 @@
     "passport": "^0.6.0",
     "passport-http": "^0.3.0",
     "passport-http-bearer": "^1.0.1",
+    "dotenv": "^16.4.5",
     "pino": "^10.1.0",
     "pino-http": "^11.0.0",
     "pino-pretty": "^11.2.2",
