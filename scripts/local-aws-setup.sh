@@ -18,10 +18,15 @@ export AWS_SESSION_TOKEN=test
 export AWS_DEFAULT_REGION=us-east-1
 echo "AWS_DEFAULT_REGION=us-east-1"
 
-# Wait for LocalStack S3 to be ready
+# Wait for LocalStack S3 to be ready (newer LocalStack health endpoints may differ)
 echo "Waiting for LocalStack S3..."
-until (curl --silent http://localhost:4566/health | grep "\"s3\": \"\(running\|available\)\"" >/dev/null); do
-  sleep 5
+end=$((SECONDS + 120))
+while ! aws --endpoint-url=http://localhost:4566 s3 ls >/dev/null 2>&1; do
+  if [ $SECONDS -ge $end ]; then
+    echo "Timed out waiting for LocalStack S3"
+    exit 1
+  fi
+  sleep 3
 done
 echo "LocalStack S3 is ready"
 
