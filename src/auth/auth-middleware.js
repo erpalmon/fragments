@@ -1,24 +1,13 @@
+// src/auth/auth-middleware.js
 const passport = require('passport');
-const { createErrorResponse } = require('../response');
 const logger = require('../logger');
 
 function createAuthMiddleware(strategy) {
   return function (req, res, next) {
-    // Ensure passport is properly initialized
-    if (!passport._strategy(strategy)) {
-      logger.error({ strategy }, 'Passport strategy not found');
-      return res.status(500).json({
-        status: 'error',
-        error: {
-          code: 500,
-          message: 'Authentication strategy not configured'
-        }
-      });
-    }
-
-    return passport.authenticate(strategy, { session: false }, (err, user) => {
+    // Use Passport's built-in authentication
+    return passport.authenticate(strategy, { session: false }, (err, user, info) => {
       if (err) {
-        logger.warn({ err }, 'Error authenticating user');
+        logger.error({ err }, 'Authentication error');
         return res.status(500).json({
           status: 'error',
           error: {
@@ -27,16 +16,19 @@ function createAuthMiddleware(strategy) {
           }
         });
       }
+
       if (!user) {
         logger.warn('401 Unauthorized - No user');
         return res.status(401).json({
           status: 'error',
           error: {
             code: 401,
-            message: 'Unauthorized'
+            message: info?.message || 'Authentication failed'
           }
         });
       }
+
+      // Attach user to request
       req.user = user;
       logger.debug({ userId: user.id }, 'User authenticated');
       next();

@@ -1,61 +1,18 @@
 {
   "name": "fragments",
   "version": "1.0.0",
-  "description": "A Node.js fragments microservice",
-  "main": "src/app.js",
   "scripts": {
     "test": "NODE_ENV=test jest --config=jest.config.js --detectOpenHandles",
-    "test:watch": "NODE_ENV=test jest --watch",
-    "test:coverage": "NODE_ENV=test jest --coverage",
-    "test:integration": "NODE_ENV=test hurl --test --glob \"tests/integration/**/*.hurl\"",
-    "start": "NODE_ENV=production node -r dotenv/config src/app.js dotenv_config_path=.env.production",
-    "dev": "NODE_ENV=development LOG_LEVEL=debug nodemon -r dotenv/config src/app.js dotenv_config_path=.env.development",
-    "debug": "NODE_ENV=development LOG_LEVEL=debug nodemon --inspect=0.0.0.0:9229 -r dotenv/config src/app.js dotenv_config_path=.env.development",
-    "lint": "eslint .",
-    "format": "prettier --write \"**/*.{js,json,md}\""
+    "test:watch": "npm test -- --watch",
+    "test:coverage": "npm test -- --coverage"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/HumamBahoo/fragments.git"
-  },
-  "author": "Humam Bahoo",
-  "license": "UNLICENSED",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.309.0",
-    "@aws-sdk/client-s3": "^3.303.0",
-    "@aws-sdk/lib-dynamodb": "^3.309.0",
-    "aws-jwt-verify": "^5.1.1",
-    "compression": "^1.7.4",
-    "content-type": "^1.0.5",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "helmet": "^7.0.0",
-    "html-to-text": "^9.0.5",
-    "http-auth": "^4.1.4",
-    "http-auth-passport": "^1.0.4",
-    "markdown-it": "^14.1.0",
+    "express": "^4.17.1",
     "passport": "^0.6.0",
-    "passport-http": "^0.3.0",
-    "passport-http-bearer": "^1.0.1",
-    "pino": "^8.21.0",
-    "pino-http": "^8.3.3",
-    "pino-pretty": "^9.4.1",
-    "sharp": "^0.32.6",
-    "stoppable": "^1.1.0"
+    "passport-http": "^0.3.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.5",
-    "@babel/plugin-transform-runtime": "^7.28.5",
-    "@babel/preset-env": "^7.28.5",
-    "@babel/runtime": "^7.28.4",
-    "@orangeopensource/hurl": "^7.1.0",
-    "@types/jest": "^29.4.0",
-    "babel-jest": "^30.2.0",
-    "eslint": "^8.34.0",
     "jest": "^29.4.3",
-    "nodemon": "^3.1.11",
-    "prettier": "2.8.4",
-    "supertest": "^6.3.4"
+    "supertest": "^6.3.3"
   }
 }

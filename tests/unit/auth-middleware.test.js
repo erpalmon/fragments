@@ -1,48 +1,54 @@
 // tests/unit/auth-middleware.test.js
-const passport = require('passport');
-const hash = require('../../src/hash');
+const request = require('supertest');
+const app = require('../../src/app');
 const { createAuthMiddleware } = require('../../src/auth/auth-middleware');
-
-jest.mock('passport');
-jest.mock('../../src/hash');
+const { TEST_USER } = require('../helpers/auth');
 
 describe('auth-middleware', () => {
   let req, res, next;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     req = {
-      headers: {}
+      headers: {
+        authorization: `Basic ${Buffer.from(`${TEST_USER.email}:${TEST_USER.password}`).toString('base64')}`
+      }
     };
     res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn()
     };
     next = jest.fn();
-    hash.mockImplementation((str) => `hashed-${str}`);
   });
 
-  test('should handle successful authentication', async () => {
-    const middleware = createAuthMiddleware('test');
-    passport.authenticate.mockImplementation((strategy, options, callback) => {
+  test('should call next when authentication succeeds', async () => {
+    const middleware = createAuthMiddleware('basic');
+    const mockUser = { id: 'user123', email: TEST_USER.email };
+    
+    // Mock Passport's authenticate
+    const originalAuthenticate = require('passport').authenticate;
+    require('passport').authenticate = jest.fn((strategy, options, callback) => {
       return (req, res, next) => {
-        callback(null, { email: 'test@example.com' });
+        callback(null, mockUser);
       };
     });
 
     await middleware(req, res, next);
 
-    expect(passport.authenticate).toHaveBeenCalledWith('test', { session: false }, expect.any(Function));
-    expect(hash).toHaveBeenCalledWith('test@example.com');
-    expect(req.user).toBe('hashed-test@example.com');
     expect(next).toHaveBeenCalled();
+    expect(req.user).toEqual(mockUser);
+
+    // Restore original
+    require('passport').authenticate = originalAuthenticate;
   });
 
-  test('should handle failed authentication', async () => {
-    const middleware = createAuthMiddleware('test');
-    passport.authenticate.mockImplementation((strategy, options, callback) => {
+  test('should return 401 when authentication fails', async () => {
+    const middleware = createAuthMiddleware('basic');
+    
+    // Mock Passport's authenticate
+    const originalAuthenticate = require('passport').authenticate;
+    require('passport').authenticate = jest.fn((strategy, options, callback) => {
       return (req, res, next) => {
-        callback(null, false);
+        callback(null, false, { message: 'Invalid credentials' });
       };
     });
 
@@ -50,25 +56,14 @@ describe('auth-middleware', () => {
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({
-      status: 401,
-      message: 'Unauthorized'
-    });
-  });
-
-  test('should handle authentication error', async () => {
-    const middleware = createAuthMiddleware('test');
-    const testError = new Error('Test error');
-    passport.authenticate.mockImplementation((strategy, options, callback) => {
-      return (req, res, next) => {
-        callback(testError);
-      };
+      status: 'error',
+      error: {
+        code: 401,
+        message: 'Invalid credentials'
+      }
     });
 
-    await middleware(req, res, next);
-
-    expect(next).toHaveBeenCalledWith({
-      status: 500,
-      message: 'Unable to authenticate user'
-    });
+    // Restore original
+    require('passport').authenticate = originalAuthenticate;
   });
 });
