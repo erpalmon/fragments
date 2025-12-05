@@ -1,5 +1,13 @@
 // tests/setup.js
-const path = require('path');
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Make these available globally for tests
+global.__filename = __filename;
+global.__dirname = __dirname;
 
 process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = 'fatal';
@@ -7,18 +15,3 @@ process.env.HTPASSWD_FILE = path.join(__dirname, 'fixtures/.htpasswd');
 process.env.AWS_DYNAMODB_TABLE_NAME = 'fragments-test';
 process.env.AWS_S3_BUCKET_NAME = 'test-bucket';
 process.env.TEST_AUTH = 'basic';
-
-// Clear AWS and Cognito settings
-delete process.env.AWS_ACCESS_KEY_ID;
-delete process.env.AWS_SECRET_ACCESS_KEY;
-delete process.env.AWS_SESSION_TOKEN;
-delete process.env.AWS_COGNITO_POOL_ID;
-delete process.env.AWS_COGNITO_CLIENT_ID;
-
-// Set test timeout
-jest.setTimeout(30000);
-
-// Ensure we're in test environment
-if (process.env.NODE_ENV !== 'test') {
-  throw new Error('Tests must be run with NODE_ENV=test');
-}

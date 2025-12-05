@@ -1,13 +1,10 @@
 // tests/unit/response.test.js
+import { jest } from '@jest/globals';
+import { createErrorResponse, createSuccessResponse } from '../../src/response.js';
 
-const { createErrorResponse, createSuccessResponse } = require('../../src/response');
-
-// Define (i.e., name) the set of tests we're about to do
 describe('API Responses', () => {
-  // Write a test for calling createErrorResponse()
-  test('createErrorResponse()', () => {
+  test('createErrorResponse() returns correct error format', () => {
     const errorResponse = createErrorResponse(404, 'not found');
-    // Expect the result to look like the following
     expect(errorResponse).toEqual({
       status: 'error',
       error: {
@@ -17,26 +14,48 @@ describe('API Responses', () => {
     });
   });
 
-  // Write a test for calling createSuccessResponse() with no argument
-  test('createSuccessResponse()', () => {
-    // No arg passed
+  test('createSuccessResponse() without arguments returns minimal success response', () => {
     const successResponse = createSuccessResponse();
-    // Expect the result to look like the following
     expect(successResponse).toEqual({
       status: 'ok',
     });
   });
 
-  // Write a test for calling createSuccessResponse() with an argument
-  test('createSuccessResponse(data)', () => {
-    // Data argument included
+  test('createSuccessResponse() with data merges data into response', () => {
     const data = { a: 1, b: 2 };
     const successResponse = createSuccessResponse(data);
-    // Expect the result to look like the following
     expect(successResponse).toEqual({
       status: 'ok',
-      a: 1,
-      b: 2,
+      ...data,
+    });
+  });
+
+  test('createErrorResponse() with additional error details includes them in response', () => {
+    const errorResponse = createErrorResponse(400, 'bad request', { field: 'email' });
+    expect(errorResponse).toEqual({
+      status: 'error',
+      error: {
+        code: 400,
+        message: 'bad request',
+        field: 'email',
+      },
+    });
+  });
+
+  test('createSuccessResponse() with nested objects preserves structure', () => {
+    const data = { 
+      user: { 
+        id: 1, 
+        name: 'Test' 
+      } 
+    };
+    const successResponse = createSuccessResponse(data);
+    expect(successResponse).toEqual({
+      status: 'ok',
+      user: {
+        id: 1,
+        name: 'Test'
+      }
     });
   });
 });

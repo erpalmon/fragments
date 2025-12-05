@@ -1,4 +1,7 @@
 // tests/unit/memory.test.js
+import { jest } from '@jest/globals';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 // We re-require the module before each test so the in-memory state is fresh.
 describe('in-memory fragments data backend', () => {
@@ -14,13 +17,13 @@ describe('in-memory fragments data backend', () => {
 
   const nowIso = () => new Date().toISOString();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.resetModules();
     // Prefer the strategy entry (../../src/model/data); fall back to memory path.
     try {
-      store = require('../../src/model/data');
+      store = (await import('../../src/model/data/index.js')).default;
     } catch {
-      store = require('../../src/model/data/memory');
+      store = (await import('../../src/model/data/memory/index.js')).default;
     }
   });
 
@@ -127,5 +130,36 @@ describe('in-memory fragments data backend', () => {
 
     expect(await store.readFragment(ownerId, id)).toBeUndefined();
     expect(await store.readFragmentData(ownerId, id)).toBeUndefined();
+  });
+
+  test('writeFragment() throws when required fields are missing', async () => {
+    await expect(store.writeFragment({})).rejects.toThrow();
+  });
+
+  test('readFragmentData() returns undefined for non-existent fragment', async () => {
+    const data = await store.readFragmentData('nonexistent', 'fragment');
+    expect(data).toBeUndefined();
+  });
+
+  test('concurrent modifications are handled correctly', async () => {
+    const ownerId = 'concurrent@example.com';
+    const id = 'concurrent-1';
+    const frag = {
+      id,
+      ownerId,
+      type: 'text/plain',
+      size: 10,
+      created: nowIso(),
+      updated: nowIso(),
+    };
+
+    await store.writeFragment(frag);
+    const promises = Array(10).fill().map((_, i) => 
+      store.writeFragmentData(ownerId, id, Buffer.from(`test-${i}`))
+    );
+    await Promise.all(promises);
+
+    const data = await store.readFragmentData(ownerId, id);
+    expect(data.toString()).toMatch(/^test-\d$/);
   });
 });

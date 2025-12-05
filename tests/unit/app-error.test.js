@@ -1,22 +1,20 @@
 // tests/unit/app-error.test.js
-const request = require('supertest');
+import request from 'supertest';
+import { jest } from '@jest/globals';
 
 describe('app error handler', () => {
   const goodAuth = ['user1@email.com', 'password1'];
 
   test('returns JSON 500 when an internal error occurs', async () => {
     jest.resetModules();
-
+    
     // Mock the existing POST /v1/fragments route handler to throw
-    jest.doMock('../../src/routes/api/post', () => {
-      return (req, res, next) => next(new Error('test error'));
-    });
+    jest.unstable_mockModule('../../src/routes/api/post.js', () => ({
+      default: (req, res, next) => next(new Error('test error'))
+    }));
 
-    // Load app in an isolated module context so this mock only applies here
-    let app;
-    jest.isolateModules(() => {
-      app = require('../../src/app');
-    });
+    // Load app in an isolated module context
+    const { default: app } = await import('../../src/app.js');
 
     const res = await request(app)
       .post('/v1/fragments')
@@ -35,24 +33,21 @@ describe('app error handler', () => {
     jest.resetModules();
 
     // Mock route to forward an error with a specific status
-    jest.doMock('../../src/routes/api/post', () => {
-      return (req, res, next) => {
+    jest.unstable_mockModule('../../src/routes/api/post.js', () => ({
+      default: (req, res, next) => {
         const err = new Error('not implemented');
         err.status = 501;
         next(err);
-      };
-    });
+      }
+    }));
 
-    let app;
-    jest.isolateModules(() => {
-      app = require('../../src/app');
-    });
+    const { default: app } = await import('../../src/app.js');
 
     const res = await request(app)
       .post('/v1/fragments')
       .auth(...goodAuth)
       .set('Content-Type', 'text/plain')
-      .send('anything');
+      .send('test');
 
     expect(res.status).toBe(501);
     expect(res.body).toEqual({

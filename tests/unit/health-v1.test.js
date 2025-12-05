@@ -1,6 +1,10 @@
-const request = require('supertest');
-const app = require('../../src/app');
-const { author, version } = require('../../package.json');
+// tests/unit/health-v1.test.js
+import request from 'supertest';
+import { jest } from '@jest/globals';
+import app from '../../src/app.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { version, author } = require('../../package.json');
 
 describe('/v1/ health check', () => {
   test('GET /v1/ returns 200 with non-cacheable JSON', async () => {
@@ -12,5 +16,17 @@ describe('/v1/ health check', () => {
     expect(res.body.version).toBe(version);
     expect(res.body.author).toBe(author);
     expect(res.body.githubUrl.startsWith('https://github.com/')).toBe(true);
+  });
+
+  test('should not expose sensitive information', async () => {
+    const res = await request(app).get('/v1/');
+    expect(res.body).not.toHaveProperty('dependencies');
+    expect(res.body).not.toHaveProperty('devDependencies');
+    expect(res.body).not.toHaveProperty('scripts');
+  });
+
+  test('should return 404 for non-existent routes', async () => {
+    const res = await request(app).get('/v1/non-existent-route');
+    expect(res.statusCode).toBe(404);
   });
 });

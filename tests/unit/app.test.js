@@ -1,6 +1,6 @@
 // tests/unit/app.test.js
-const request = require('supertest');
-const app = require('../../src/app');
+import request from 'supertest';
+import app from '../../src/app.js';
 
 describe('App 404 handler', () => {
   test('returns JSON 404 for unknown routes', async () => {

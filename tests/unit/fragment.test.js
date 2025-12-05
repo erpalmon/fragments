@@ -1,39 +1,92 @@
-// tests/unit/fragment.test.js
-const { Fragment } = require('../../src/model/fragment');
+// tests/unit/fragment-post.test.js
+import request from 'supertest';
+import { jest } from '@jest/globals';
+import app from '../../src/app.js';
 
-describe('Fragment', () => {
-  test('should create a new fragment', () => {
-    const fragment = new Fragment({
-      id: 'test-id',
-      ownerId: 'user123',
-      type: 'text/plain',
-      size: 0,
-    });
+// Mock the auth middleware
+jest.unstable_mockModule('../../src/auth/auth-middleware.js', () => ({
+  default: (req, res, next) => next()
+}));
 
-    expect(fragment).toBeDefined();
-    expect(fragment.id).toBe('test-id');
-    expect(fragment.ownerId).toBe('user123');
-    expect(fragment.type).toBe('text/plain');
-    expect(fragment.size).toBe(0);
+// Mock the basic auth module
+jest.unstable_mockModule('../../src/auth/basic-auth.js', () => ({
+  strategy: jest.fn(),
+  authenticate: jest.fn().mockImplementation(() => (req, res, next) => next()),
+}));
+
+describe('POST /v1/fragments', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  // Add more real tests for Fragment methods
-  test('should update timestamps on save', async () => {
-    const fragment = new Fragment({
-      id: 'test-save',
-      ownerId: 'user123',
-      type: 'text/plain',
-      size: 0,
-    });
+  test('unauthenticated requests are denied', async () => {
+    const res = await request(app)
+      .post('/v1/fragments')
+      .set('Content-Type', 'text/plain')
+      .send('test data');
+    expect(res.status).toBe(401);
+  });
 
-    const originalUpdated = fragment.updated;
+  test('creates a new text fragment', async () => {
+    const res = await request(app)
+      .post('/v1/fragments')
+      .auth('user1@example.com', 'password1')
+      .set('Content-Type', 'text/plain')
+      .send('test data');
+    
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.fragment).toBeDefined();
+    expect(res.body.fragment.id).toBeDefined();
+    expect(res.body.fragment.type).toBe('text/plain');
+    expect(res.body.fragment.size).toBe(9); // 'test data'.length
+  });
 
-    // Small delay to ensure timestamp changes
-    await new Promise((resolve) => setTimeout(resolve, 10));
+  test('fails with invalid content type', async () => {
+    const res = await request(app)
+      .post('/v1/fragments')
+      .auth('user1@example.com', 'password1')
+      .set('Content-Type', 'invalid/type')
+      .send('test data');
+    
+    expect(res.status).toBe(415);
+    expect(res.body.status).toBe('error');
+    expect(res.body.error.code).toBe(415);
+  });
 
-    await fragment.save();
+  test('creates a JSON fragment', async () => {
+    const testData = { key: 'value' };
+    const res = await request(app)
+      .post('/v1/fragments')
+      .auth('user1@example.com', 'password1')
+      .set('Content-Type', 'application/json')
+      .send(testData);
+    
+    expect(res.status).toBe(201);
+    expect(res.body.fragment.type).toBe('application/json');
+    expect(res.body.fragment.size).toBe(JSON.stringify(testData).length);
+  });
 
-    expect(fragment.updated).not.toBe(originalUpdated);
-    expect(fragment.updated.getTime()).toBeGreaterThan(originalUpdated.getTime());
+  test('creates a markdown fragment', async () => {
+    const markdown = '# Test\nThis is a test';
+    const res = await request(app)
+      .post('/v1/fragments')
+      .auth('user1@example.com', 'password1')
+      .set('Content-Type', 'text/markdown')
+      .send(markdown);
+    
+    expect(res.status).toBe(201);
+    expect(res.body.fragment.type).toBe('text/markdown');
+    expect(res.body.fragment.size).toBe(markdown.length);
+  });
+
+  test('sets the correct owner ID', async () => {
+    const res = await request(app)
+      .post('/v1/fragments')
+      .auth('user1@example.com', 'password1')
+      .set('Content-Type', 'text/plain')
+      .send('test data');
+    
+    expect(res.body.fragment.ownerId).toBe('user1@example.com');
   });
 });

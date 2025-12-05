@@ -1,4 +1,6 @@
-const request = require('supertest');
+// tests/unit/post-location-header.test.js
+import request from 'supertest';
+import { jest } from '@jest/globals';
 
 describe('POST /v1/fragments Location header branches', () => {
   const body = 'hello world';
@@ -8,15 +10,24 @@ describe('POST /v1/fragments Location header branches', () => {
 
   let app;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Clear the require cache for the app module
     jest.resetModules();
+    // Use dynamic import to get a fresh app instance
+    app = (await import('../../src/app.js')).default;
+  });
+
+  afterEach(() => {
+    // Clean up environment variables
+    delete process.env.API_URL;
   });
 
   test('uses API_URL when set', async () => {
     process.env.API_URL = 'http://example.com:8080';
-    app = require('../../src/app');
+    // Get a fresh app instance with the new environment variable
+    const freshApp = (await import('../../src/app.js')).default;
 
-    const res = await request(app)
+    const res = await request(freshApp)
       .post(path)
       .set('Content-Type', 'text/plain')
       .auth(EMAIL, PASS)
@@ -30,9 +41,9 @@ describe('POST /v1/fragments Location header branches', () => {
 
   test('falls back to req.headers.host when API_URL is missing', async () => {
     delete process.env.API_URL;
-    app = require('../../src/app');
+    const freshApp = (await import('../../src/app.js')).default;
 
-    const res = await request(app)
+    const res = await request(freshApp)
       .post(path)
       .set('Host', 'localhost:8080')
       .set('Content-Type', 'text/plain')
@@ -40,6 +51,34 @@ describe('POST /v1/fragments Location header branches', () => {
       .send(body);
 
     expect(res.statusCode).toBe(201);
-    expect(res.headers.location).toMatch(/^http:\/\/localhost:8080\/v1\/fragments\/[a-f0-9-]+$/i);
+    expect(res.headers.location).toMatch(
+      /^http:\/\/localhost:8080\/v1\/fragments\/[a-f0-9-]+$/i
+    );
+  });
+
+  test('includes fragment ID in location header', async () => {
+    const res = await request(app)
+      .post(path)
+      .set('Content-Type', 'text/plain')
+      .auth(EMAIL, PASS)
+      .send(body);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.headers.location).toMatch(/\/v1\/fragments\/[a-f0-9-]+$/);
+  });
+
+  test('uses https protocol when X-Forwarded-Proto is https', async () => {
+    const res = await request(app)
+      .post(path)
+      .set('X-Forwarded-Proto', 'https')
+      .set('Host', 'example.com')
+      .set('Content-Type', 'text/plain')
+      .auth(EMAIL, PASS)
+      .send(body);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.headers.location).toMatch(
+      /^https:\/\/example.com\/v1\/fragments\/[a-f0-9-]+$/i
+    );
   });
 });

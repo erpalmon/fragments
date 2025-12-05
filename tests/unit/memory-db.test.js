@@ -1,4 +1,6 @@
-const { createDatabase } = require('@/model/data/memory');
+// tests/unit/memory-db.test.js
+import { jest } from '@jest/globals';
+import { createDatabase } from '../../src/model/data/memory.js';
 
 describe('Memory Database', () => {
   let db;
@@ -45,5 +47,27 @@ describe('Memory Database', () => {
   test('query() returns empty array for non-existent prefix', async () => {
     const results = await db.query('nonexistent');
     expect(results).toEqual([]);
+  });
+
+  test('should handle concurrent operations', async () => {
+    // Test that the database can handle multiple operations in parallel
+    const promises = Array(10).fill().map((_, i) => 
+      db.put('concurrent', `key${i}`, { value: i })
+    );
+    await Promise.all(promises);
+    
+    const results = await db.query('concurrent');
+    expect(results).toHaveLength(10);
+  });
+
+  test('should handle large data sets', async () => {
+    // Test with a larger number of records
+    const count = 100;
+    for (let i = 0; i < count; i++) {
+      await db.put('large', `item${i}`, { id: i, data: 'x'.repeat(1000) });
+    }
+    
+    const results = await db.query('large');
+    expect(results).toHaveLength(count);
   });
 });
