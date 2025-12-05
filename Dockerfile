@@ -1,8 +1,9 @@
 # Stage 01: install dependencies
 FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea AS dependencies
 
-# Define node env to install prod dependencies only
+# Define node env to install prod dependencies only and disable Husky scripts during build
 ENV NODE_ENV=production
+ENV HUSKY=0
 
 # Define work directory for our app
 WORKDIR /fragments
@@ -14,8 +15,8 @@ COPY package.json package-lock.json ./
 ENV NPM_CONFIG_LOGLEVEL=warn
 ENV NPM_CONFIG_COLOR=false
 
-# Install dependencies
-RUN npm ci
+# Install dependencies without running lifecycle scripts (husky)
+RUN npm ci --ignore-scripts
 
 # Stage 02: setup our app
 FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea AS setup
