@@ -5,10 +5,7 @@ import app from '../../src/app.js';
 
 describe('routes index under /v1', () => {
   test('unknown /v1/* path returns JSON 404', async () => {
-    const res = await request(app).get('/v1/does-not-exist').auth(
-      'user1@email.com',
-      'password1'
-    );
+    const res = await request(app).get('/v1/does-not-exist').auth('user1@email.com', 'password1');
 
     expect(res.statusCode).toBe(404);
     expect(res.body.status).toBe('error');
@@ -27,7 +24,11 @@ describe('routes index under /v1', () => {
     const methods = ['post', 'put', 'delete', 'patch'];
 
     for (const method of methods) {
-
+      const requester = request(app);
+      const res = await requester[method]('/v1/does-not-exist').auth(
+        'user1@email.com',
+        'password1'
+      );
 
       expect(res.statusCode).toBe(404);
       expect(res.body.status).toBe('error');
