@@ -107,7 +107,19 @@ router.get('/fragments/:id', async (req, res) => {
     }
     return res.status(404).json(createErrorResponse(404, 'Fragment not found'));
   }
-  res.status(200).json(createSuccessResponse({ fragment }));
+
+  const accept = (req.headers.accept || '').toLowerCase();
+  const wantsJson = accept.includes('application/json');
+
+  if (wantsJson) {
+    return res.status(200).json(createSuccessResponse({ fragment }));
+  }
+
+  const data = await fragment.getData();
+  const buffer = Buffer.isBuffer(data) ? data : Buffer.from(String(data));
+  res.set('Content-Type', fragment.type || 'application/octet-stream');
+  res.set('Content-Length', buffer.length.toString());
+  return res.status(200).send(buffer);
 });
 
 module.exports = router;

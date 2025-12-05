@@ -63,7 +63,8 @@ describe('GET /v1/fragments/:id', () => {
     // Then try to get it
     const getRes = await request(app)
       .get(`/v1/fragments/${fragmentId}`)
-      .auth('test@example.com', 'password');
+      .auth('test@example.com', 'password')
+      .set('Accept', 'application/json');
 
     expect(getRes.status).toBe(200);
     expect(getRes.body.status).toBe('ok');
