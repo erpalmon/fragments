@@ -75,9 +75,12 @@ jobs:
         run: ./scripts/local-aws-setup.sh
       - name: Wait for fragments service
         run: |
-          echo "Waiting for fragments on http://localhost:8080..."
+          echo "Waiting for fragments on http://localhost:8080 (and 8081 fallback)..."
           for i in {1..60}; do
-            if curl -sSf http://localhost:8080/v1/health >/dev/null 2>&1; then
+            if curl -sSf http://localhost:8080/v1/health >/dev/null 2>&1 || \
+               curl -sSf http://localhost:8080/health >/dev/null 2>&1 || \
+               curl -sSf http://localhost:8081/v1/health >/dev/null 2>&1 || \
+               curl -sSf http://localhost:8081/health >/dev/null 2>&1; then
               echo "Fragments service is up"
               exit 0
             fi
