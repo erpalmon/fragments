@@ -2,8 +2,7 @@
 import request from 'supertest';
 import { jest } from '@jest/globals';
 import app from '../../src/app.js';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+// package.json needed for metadata assertions
 const { version, author } = require('../../package.json');
 
 describe('/ health check', () => {

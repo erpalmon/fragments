@@ -12,6 +12,10 @@ const { createSuccessResponse, createErrorResponse } = require('./response');
 
 const app = express();
 
+// Parse JSON and text bodies for fragment operations
+app.use(express.json());
+app.use(express.text({ type: '*/*' }));
+
 // Global middleware
 app.use(pino);
 app.use(helmet());
@@ -30,7 +34,6 @@ app.use((req, res, next) => {
 });
 
 // Passport initialization
-passport.use(auth.strategy, auth.basicAuth);
 app.use(passport.initialize());
 
 // Mount all routes

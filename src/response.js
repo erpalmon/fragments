@@ -24,12 +24,13 @@ module.exports.createSuccessResponse = (data = {}) => {
  * // returns { status: 'error', error: { code: 400, message: 'Bad request' } }
  * createErrorResponse(400, 'Bad request')
  */
-module.exports.createErrorResponse = (code, message) => {
+module.exports.createErrorResponse = (code, message, details = {}) => {
   return {
     status: 'error',
     error: {
       code,
       message,
+      ...details,
     },
   };
 };

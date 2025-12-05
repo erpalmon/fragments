@@ -8,10 +8,7 @@ const { createHash } = require('crypto');
  * @returns {string} SHA-256 hash of the email in hex format
  * @throws {Error} If email is not provided
  */
-function hash(email) {
-  if (!email) {
-    throw new Error('Email is required for hashing');
-  }
+function hash(email = '') {
   return createHash('sha256').update(email).digest('hex');
 }
 

@@ -1,22 +1,21 @@
 // tests/unit/logger.test.js
 import { jest } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import { createRequire } from 'module';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const loggerPath = resolve(__dirname, '../../src/logger.js');
+const loadLogger = async () => {
+  const mod = await import('../../src/logger.js');
+  return mod.default || mod;
+};
 
 describe('logger', () => {
   let originalLogLevel;
   let logger;
 
   beforeAll(async () => {
+    originalLogLevel = process.env.LOG_LEVEL;
     // Ensure we're using a fresh import for each test
     process.env.LOG_LEVEL = 'debug';
     // Use dynamic import to get a fresh instance for each test
-    logger = (await import('../../src/logger.js')).default;
+    logger = await loadLogger();
   });
 
   afterAll(() => {
@@ -49,7 +48,7 @@ describe('logger', () => {
       test(`respects ${level} log level`, async () => {
         process.env.LOG_LEVEL = level;
         // Force a fresh import to pick up the new log level
-        const freshLogger = (await import('../../src/logger.js')).default;
+        const freshLogger = await loadLogger();
         expect(freshLogger.levels.values[level] !== undefined).toBe(true);
       });
     };
@@ -61,7 +60,7 @@ describe('logger', () => {
     const originalNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
     
-    const devLogger = (await import('../../src/logger.js')).default;
+    const devLogger = await loadLogger();
     expect(devLogger).toBeDefined();
     
     // Clean up

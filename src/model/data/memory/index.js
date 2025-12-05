@@ -4,8 +4,17 @@ const MemoryDB = require('./memory-db');
 const data = new MemoryDB();
 const metadata = new MemoryDB();
 
+// Factory used by unit tests to exercise a fresh in-memory store
+function createDatabase() {
+  return new MemoryDB();
+}
+
 // Write a fragment's metadata to memory db. Returns a Promise<void>
 function writeFragment(fragment) {
+  if (!fragment || !fragment.ownerId || !fragment.id || !fragment.type) {
+    return Promise.reject(new Error('fragment ownerId, id, and type are required'));
+  }
+
   // Store only JSON serialization to mimic real stores (e.g., AWS)
   const serialized = JSON.stringify(fragment);
   return metadata.put(fragment.ownerId, fragment.id, serialized);
@@ -50,6 +59,7 @@ function deleteFragment(ownerId, id) {
 }
 
 module.exports = {
+  createDatabase,
   listFragments,
   writeFragment,
   readFragment,
