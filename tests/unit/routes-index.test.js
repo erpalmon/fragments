@@ -21,6 +21,7 @@ describe('routes index under /v1', () => {
   test('returns 404 for non-existent /v1 routes with different methods', async () => {
     const methods = ['post', 'put', 'delete', 'patch'];
     for (const method of methods) {
+      // prettier-ignore
       const res = await request(app)[method]('/v1/does-not-exist').auth('user1@email.com', 'password1');
       expect(res.statusCode).toBe(404);
       expect(res.body.status).toBe('error');
