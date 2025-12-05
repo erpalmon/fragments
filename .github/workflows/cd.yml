@@ -1,82 +1,69 @@
 # Continuous Delivery Workflow
-#
-# This should happen whenever we push a new tag, and we tag an existing
-# commit after we know it's good (e.g., has been tested).
-#
-# To create a new tag, we also need to update the package.json version:
-#
-# $ npm version 0.5.0
-#
-# This will update `version` in package.json to `0.5.0` and create a new
-# tag, `v0.5.0` in git. We'll then use this tag (i.e., `v0.5.0`) to tag
-# our docker image before we push to AWS.
-
 name: cd
 
 on:
   push:
-    # Whenever a new tag is pushed
     tags:
-      # Any tag starting with v... should trigger this workflow.
       - 'v**'
 
 jobs:
-  # NOTE: this assumes our CI jobs have already passed previously
-  # (i.e., that we don't tag a commit manually until we know a build is working)
   aws:
     name: AWS
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1        # change if your cluster is in another region
+      ECS_CLUSTER: erpalmon-fragments-cluster     # change to your actual ECS cluster name or ARN
+      ECR_REPO: fragments
+      ECS_SERVICE: fragments-service1
     steps:
-      # Our first step is to checkout the code from git,
-      # since we need to build a new Docker image from it:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # fetch full history and tags so buildkit can resolve commits
+          tags: true
 
-      # Use buildx, which is faster and can optimize the build steps
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Exchange our GitHub Secrets for a temporary AWS credential session
-      # and set env for AWS CLI / ECR login
-      # NOTE: ending/restarting the Learner Lab will void these secrets.
-      # If you see "The security token included in the request is expired",
-      # update the three AWS secrets with fresh values from the lab.
       - name: Configure AWS Credentials using Secrets
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      # Login to our ECR repository using the configured credentials
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # Build and Push an Image to Amazon ECR
+      - name: Verify AWS credentials & ECS cluster
+        run: |
+          echo "Region: $AWS_REGION"
+          echo "Caller identity:"
+          aws sts get-caller-identity --output json
+          echo "Checking ECS cluster: $ECS_CLUSTER"
+          aws ecs describe-clusters --clusters "$ECS_CLUSTER" --region "$AWS_REGION" \
+            --query 'clusters[*].{name:clusterName,status:status,arn:clusterArn}' --output json || \
+            { echo "ECS cluster '$ECS_CLUSTER' not found or credentials invalid"; exit 1; }
+
       - name: Build and push to Amazon ECR
         env:
-          # Get the ECR registry URI from the login step output
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          # Our ECR repo name
-          ECR_REPO: fragments
-          # Use the git tag (e.g., v0.5.0) so we can reproduce releases,
-          # and also push/replace 'latest'
+          ECR_REPO: ${{ env.ECR_REPO }}
           VERSION_TAG: ${{ github.ref_name }}
         uses: docker/build-push-action@v6
         with:
+          context: .                        # use local workspace to avoid remote git fetch by buildkit
           push: true
-          # Tag with the git version tag AND latest
-          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.VERSION_TAG }}, ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:latest
- 
-      # Render the task definition with the new image and env vars
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.VERSION_TAG }},${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:latest
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPO: fragments
+          ECR_REPO: ${{ env.ECR_REPO }}
           VERSION_TAG: ${{ github.ref_name }}
         with:
           task-definition: fragments-definition.json
@@ -85,14 +72,13 @@ jobs:
           environment-variables: |
             LOG_LEVEL=info
             NODE_ENV=production
-            AWS_REGION=us-east-1
+            AWS_REGION=${{ env.AWS_REGION }}
             AWS_S3_BUCKET_NAME=erpalmon-fragments
 
-      # Deploy the updated task definition to ECS
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.render-task-def.outputs.task-definition }}
-          service: fragments           # <-- your ECS service name
-          cluster: fragments           # <-- your ECS cluster name
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
