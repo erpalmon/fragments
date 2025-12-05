@@ -1,0 +1,2 @@
+npm test
+npx pretty-quick --staged
