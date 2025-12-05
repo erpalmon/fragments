@@ -45,7 +45,7 @@ async function listFragments(ownerId, expand = false) {
 function deleteFragment(ownerId, id) {
   return Promise.all([
     metadata.del(ownerId, id), // metadata
-    data.del(ownerId, id),     // data
+    data.del(ownerId, id), // data
   ]);
 }
 

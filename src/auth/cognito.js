@@ -34,7 +34,7 @@ module.exports.strategy = () => {
       // Verify the JWT token
       const user = await jwtVerifier.verify(token);
       logger.debug({ user }, 'Token successfully verified');
-      
+
       // Return just the email for the user
       done(null, user.email);
     } catch (err) {

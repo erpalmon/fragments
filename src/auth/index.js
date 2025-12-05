@@ -14,5 +14,5 @@ module.exports = {
   createAuthMiddleware,
   strategy,
   basicAuth,
-  authenticate
+  authenticate,
 };

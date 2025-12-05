@@ -13,10 +13,10 @@ const HOST = process.env.HOST || '0.0.0.0';
 const server = stoppable(
   app.listen(PORT, HOST, () => {
     logger.info(
-      { 
-        host: HOST, 
-        port: PORT, 
-        env: process.env.NODE_ENV || 'development' 
+      {
+        host: HOST,
+        port: PORT,
+        env: process.env.NODE_ENV || 'development',
       },
       'Fragments API server started'
     );

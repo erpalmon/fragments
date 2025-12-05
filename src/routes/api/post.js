@@ -11,12 +11,12 @@ const contentType = require('content-type');
 module.exports.createFragment = async (req, res) => {
   const ownerId = req.user;
   const header = req.headers['content-type'] || '';
-  
+
   try {
     // Parse and validate Content-Type
     const { type } = contentType.parse(header);
     const allowed = type === 'application/json' || type.startsWith('text/');
-    
+
     if (!allowed) {
       logger.warn({ type }, 'Unsupported Content-Type');
       return res.status(415).json(createErrorResponse(415, 'Unsupported Content-Type'));
@@ -34,22 +34,19 @@ module.exports.createFragment = async (req, res) => {
     const location = `${base}/v1/fragments/${fragment.id}`;
 
     logger.info({ id: fragment.id, type, size: fragment.size }, 'Fragment created');
-    
+
     // Set response headers
     res.setHeader('Location', location);
     res.setHeader('Access-Control-Expose-Headers', 'Location');
-    
-    // Return success response
-    return res.status(201).json(
-      createSuccessResponse({ fragment })
-    );
 
+    // Return success response
+    return res.status(201).json(createSuccessResponse({ fragment }));
   } catch (err) {
     if (err.type === 'InvalidArgumentError') {
       logger.warn({ err }, 'Invalid fragment data');
       return res.status(400).json(createErrorResponse(400, 'Invalid fragment data'));
     }
-    
+
     logger.error({ err }, 'Error creating fragment');
     return res.status(500).json(createErrorResponse(500, 'Internal server error'));
   }

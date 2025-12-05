@@ -9,7 +9,7 @@ router.post('/', async (req, res) => {
     const fragment = new Fragment({
       ownerId: req.user.id,
       type: req.get('Content-Type') || 'text/plain',
-      size: parseInt(req.get('Content-Length') || '0')
+      size: parseInt(req.get('Content-Length') || '0'),
     });
     await fragment.save();
     await fragment.setData(req.body);

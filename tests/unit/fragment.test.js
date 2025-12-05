@@ -7,7 +7,7 @@ describe('Fragment', () => {
       id: 'test-id',
       ownerId: 'user123',
       type: 'text/plain',
-      size: 0
+      size: 0,
     });
 
     expect(fragment).toBeDefined();
@@ -23,16 +23,16 @@ describe('Fragment', () => {
       id: 'test-save',
       ownerId: 'user123',
       type: 'text/plain',
-      size: 0
+      size: 0,
     });
 
     const originalUpdated = fragment.updated;
-    
+
     // Small delay to ensure timestamp changes
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     await fragment.save();
-    
+
     expect(fragment.updated).not.toBe(originalUpdated);
     expect(fragment.updated.getTime()).toBeGreaterThan(originalUpdated.getTime());
   });

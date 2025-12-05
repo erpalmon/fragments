@@ -9,7 +9,7 @@ export default [
   // Apply CommonJS for all JS files
   {
     files: ['**/*.js'],
-    languageOptions: { 
+    languageOptions: {
       sourceType: 'commonjs',
       globals: {
         ...globals.node,
@@ -18,24 +18,23 @@ export default [
     },
     rules: {
       // Allow unused variables that start with underscore
-      'no-unused-vars': ['error', { 
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-        caughtErrorsIgnorePattern: '^_'
-      }]
-    }
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
   },
 
   // Disable no-unused-vars in test and mock files
   {
-    files: [
-      'tests/**/*.js',
-      '**/__mocks__/**/*.js',
-      '**/tests/**/*.js'
-    ],
+    files: ['tests/**/*.js', '**/__mocks__/**/*.js', '**/tests/**/*.js'],
     rules: {
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': 'off'
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 ];

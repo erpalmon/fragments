@@ -41,9 +41,10 @@ jest.mock('@aws-sdk/lib-dynamodb', () => {
         return item ? Promise.resolve({ Item: { ...item } }) : Promise.resolve({});
       }
       case 'QueryCommand': {
-        const items = Array.from(mockDynamoDBState.items.values())
-          .filter(item => item.ownerId === input.ExpressionAttributeValues[':ownerId']);
-        
+        const items = Array.from(mockDynamoDBState.items.values()).filter(
+          (item) => item.ownerId === input.ExpressionAttributeValues[':ownerId']
+        );
+
         if (input.ProjectionExpression === 'id') {
           return Promise.resolve({
             Items: items.map(({ id }) => ({ id })),
@@ -51,7 +52,7 @@ jest.mock('@aws-sdk/lib-dynamodb', () => {
             ScannedCount: items.length,
           });
         }
-        return Promise.resolve({ 
+        return Promise.resolve({
           Items: [...items],
           Count: items.length,
           ScannedCount: items.length,
@@ -87,7 +88,7 @@ jest.mock('@aws-sdk/lib-dynamodb', () => {
 // Mock S3 Client
 jest.mock('@aws-sdk/client-s3', () => {
   const mockS3State = new Map();
-  
+
   return {
     S3Client: jest.fn().mockImplementation(() => ({
       send: jest.fn().mockImplementation((command) => {
@@ -141,8 +142,8 @@ jest.mock('http-auth', () => {
           'test@example.com': 'password123',
         };
         callback(users[username] === password);
-      })
-    }))
+      }),
+    })),
   };
 });
 

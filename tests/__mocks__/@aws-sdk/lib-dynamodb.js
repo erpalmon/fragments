@@ -32,6 +32,6 @@ module.exports = {
   QueryCommand,
   DeleteCommand,
   DynamoDBDocument: {
-    from: jest.fn(client => client)
-  }
+    from: jest.fn((client) => client),
+  },
 };

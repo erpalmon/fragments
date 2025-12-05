@@ -65,7 +65,7 @@ app.use((err, req, res, _next) => {
 
   res.status(status).json({
     status: 'error',
-    error: { code: status, message }
+    error: { code: status, message },
   });
 });
 

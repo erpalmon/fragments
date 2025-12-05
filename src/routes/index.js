@@ -21,7 +21,7 @@ router.use('/v1', authenticate(), require('./api'));
 router.get('/', (req, res) => {
   logger.debug('Calling GET /');
   res.setHeader('Cache-Control', 'no-cache');
-  
+
   res.status(200).json(
     createSuccessResponse({
       author,

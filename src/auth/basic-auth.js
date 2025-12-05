@@ -15,5 +15,5 @@ const authorize = authPassport(basicAuth);
 
 module.exports = {
   basicAuth,
-  authorize
+  authorize,
 };

@@ -9,8 +9,7 @@ jest.mock('../../src/auth/auth-middleware');
 jest.mock('../../src/auth/basic-auth', () => {
   return {
     strategy: jest.fn(),
-    authenticate: jest.fn()
-      .mockImplementation(() => (req, res, next) => next())
+    authenticate: jest.fn().mockImplementation(() => (req, res, next) => next()),
   };
 });
 
@@ -21,10 +20,8 @@ describe('GET /v1/fragments', () => {
   });
 
   test('authenticated users get a fragments array', async () => {
-    const res = await request(app)
-      .get('/v1/fragments')
-      .auth('test@example.com', 'password');
-    
+    const res = await request(app).get('/v1/fragments').auth('test@example.com', 'password');
+
     expect(res.statusCode).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(Array.isArray(res.body.fragments)).toBe(true);

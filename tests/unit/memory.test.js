@@ -71,8 +71,22 @@ describe('in-memory fragments data backend', () => {
 
   test('listFragments() returns ids by default and full objects when expand=true', async () => {
     const ownerId = 'user3@example.com';
-    const a = { id: 'a', ownerId, type: 'text/plain', size: 1, created: nowIso(), updated: nowIso() };
-    const b = { id: 'b', ownerId, type: 'text/plain', size: 2, created: nowIso(), updated: nowIso() };
+    const a = {
+      id: 'a',
+      ownerId,
+      type: 'text/plain',
+      size: 1,
+      created: nowIso(),
+      updated: nowIso(),
+    };
+    const b = {
+      id: 'b',
+      ownerId,
+      type: 'text/plain',
+      size: 2,
+      created: nowIso(),
+      updated: nowIso(),
+    };
 
     await store.writeFragment(a);
     await store.writeFragment(b);

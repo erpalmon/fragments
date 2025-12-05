@@ -25,9 +25,7 @@ describe('POST /v1/fragments', () => {
     expect(res.status).toBe(201);
 
     // Location header must be a full URL to the new resource
-    expect(res.headers.location).toMatch(
-      /^https?:\/\/.+\/v1\/fragments\/[0-9a-f-]+$/i
-    );
+    expect(res.headers.location).toMatch(/^https?:\/\/.+\/v1\/fragments\/[0-9a-f-]+$/i);
 
     // Response shape + values
     expect(res.body.status).toBe('ok');

@@ -12,8 +12,8 @@ function createAuthMiddleware(strategy) {
           status: 'error',
           error: {
             code: 500,
-            message: 'Unable to authenticate user'
-          }
+            message: 'Unable to authenticate user',
+          },
         });
       }
 
@@ -23,8 +23,8 @@ function createAuthMiddleware(strategy) {
           status: 'error',
           error: {
             code: 401,
-            message: info?.message || 'Authentication failed'
-          }
+            message: info?.message || 'Authentication failed',
+          },
         });
       }
 

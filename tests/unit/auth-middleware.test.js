@@ -1,21 +1,18 @@
-// tests/unit/auth-middleware.test.js
-const request = require('supertest');
-const app = require('../../src/app');
-const { createAuthMiddleware } = require('../../src/auth/auth-middleware');
-const { TEST_USER } = require('../helpers/auth');
+const { createAuthMiddleware } = require('@/auth');
+const { TEST_USER } = require('../../setup');
 
-describe('auth-middleware', () => {
+describe('Auth Middleware', () => {
   let req, res, next;
 
   beforeEach(() => {
     req = {
       headers: {
-        authorization: `Basic ${Buffer.from(`${TEST_USER.email}:${TEST_USER.password}`).toString('base64')}`
-      }
+        authorization: `Basic ${Buffer.from(`${TEST_USER.email}:${TEST_USER.password}`).toString('base64')}`,
+      },
     };
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
     next = jest.fn();
   });
@@ -23,13 +20,11 @@ describe('auth-middleware', () => {
   test('should call next when authentication succeeds', async () => {
     const middleware = createAuthMiddleware('basic');
     const mockUser = { id: 'user123', email: TEST_USER.email };
-    
+
     // Mock Passport's authenticate
     const originalAuthenticate = require('passport').authenticate;
-    require('passport').authenticate = jest.fn((strategy, options, callback) => {
-      return (req, res, next) => {
-        callback(null, mockUser);
-      };
+    require('passport').authenticate = jest.fn((_strategy, _options, callback) => {
+      callback(null, mockUser);
     });
 
     await middleware(req, res, next);
@@ -43,13 +38,11 @@ describe('auth-middleware', () => {
 
   test('should return 401 when authentication fails', async () => {
     const middleware = createAuthMiddleware('basic');
-    
+
     // Mock Passport's authenticate
     const originalAuthenticate = require('passport').authenticate;
-    require('passport').authenticate = jest.fn((strategy, options, callback) => {
-      return (req, res, next) => {
-        callback(null, false, { message: 'Invalid credentials' });
-      };
+    require('passport').authenticate = jest.fn((_strategy, _options, callback) => {
+      callback(null, false, { message: 'Invalid credentials' });
     });
 
     await middleware(req, res, next);
@@ -59,8 +52,8 @@ describe('auth-middleware', () => {
       status: 'error',
       error: {
         code: 401,
-        message: 'Invalid credentials'
-      }
+        message: 'Invalid credentials',
+      },
     });
 
     // Restore original

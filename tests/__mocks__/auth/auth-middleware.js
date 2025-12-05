@@ -7,5 +7,5 @@ const mockAuthorize = jest.fn((_strategy) => {
 });
 
 module.exports = {
-  authorize: mockAuthorize
+  authorize: mockAuthorize,
 };

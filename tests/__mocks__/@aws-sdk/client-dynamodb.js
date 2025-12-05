@@ -21,10 +21,10 @@ class DeleteCommand extends Command {}
 // Default mock implementation
 mockSend.mockImplementation((command) => {
   const commandName = command.constructor.name;
-  
+
   switch (commandName) {
     case 'GetCommand':
-      return Promise.resolve({ 
+      return Promise.resolve({
         Item: null, // Default to null, can be overridden in tests
       });
     case 'PutCommand':
@@ -55,7 +55,11 @@ module.exports = {
   DynamoDBDocument: {
     from: jest.fn((_client) => ({
       send: mockSend,
-      put: jest.fn().mockImplementation((params) => mockSend(new PutCommand({ ...params, Item: params.Item || {} }))),
+      put: jest
+        .fn()
+        .mockImplementation((params) =>
+          mockSend(new PutCommand({ ...params, Item: params.Item || {} }))
+        ),
       get: jest.fn().mockImplementation((params) => mockSend(new GetCommand(params))),
       query: jest.fn().mockImplementation((params) => mockSend(new QueryCommand(params))),
       delete: jest.fn().mockImplementation((params) => mockSend(new DeleteCommand(params))),
