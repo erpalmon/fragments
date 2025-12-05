@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
     }
 
     const data = await fragment.getData();
-    
+
     // Handle different content types
     if (fragment.type === 'application/json') {
       try {

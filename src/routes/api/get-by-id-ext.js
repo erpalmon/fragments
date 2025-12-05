@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
     // Handle different content types
     let converted;
     const targetType = getExtensionContentType(ext);
-    
+
     switch (fragment.type) {
       case 'text/plain':
       case 'text/markdown':

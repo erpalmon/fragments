@@ -39,10 +39,7 @@ describe('Memory Database', () => {
 
     const results = await db.query('test');
     expect(results).toHaveLength(2);
-    expect(results).toEqual(expect.arrayContaining([
-      { value: 1 },
-      { value: 2 }
-    ]));
+    expect(results).toEqual(expect.arrayContaining([{ value: 1 }, { value: 2 }]));
   });
 
   test('query() returns empty array for non-existent prefix', async () => {
