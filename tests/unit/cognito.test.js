@@ -9,7 +9,7 @@ import { CognitoStrategy } from '../../src/auth/cognito.js';
 
 // This test suite is disabled as it requires AWS Cognito configuration
 // and appropriate test environment setup
-describe.skip('Cognito Auth', () => {
+describe('Cognito Auth', () => {
   test('CognitoStrategy is a constructor', () => {
     expect(typeof CognitoStrategy).toBe('function');
     expect(CognitoStrategy.name).toBe('Strategy');
