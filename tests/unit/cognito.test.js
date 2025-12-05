@@ -24,7 +24,7 @@ describe.skip('Cognito Auth', () => {
     const options = {
       userPoolId: 'us-east-1_abc123',
       clientId: 'test-client-id',
-      region: 'us-east-1'
+      region: 'us-east-1',
     };
 
     beforeEach(() => {

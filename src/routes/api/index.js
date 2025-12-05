@@ -50,7 +50,9 @@ router.post('/fragments', async (req, res, next) => {
       !(
         (typeof req.body === 'string' && req.body.length === 0) ||
         (Buffer.isBuffer(req.body) && req.body.length === 0) ||
-        (typeof req.body === 'object' && !Buffer.isBuffer(req.body) && Object.keys(req.body).length === 0)
+        (typeof req.body === 'object' &&
+          !Buffer.isBuffer(req.body) &&
+          Object.keys(req.body).length === 0)
       );
     if (!hasBody) {
       return res.status(400).json(createErrorResponse(400, 'Request body required'));

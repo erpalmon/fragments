@@ -12,21 +12,21 @@ describe('Auth Middleware', () => {
     // Mock request with auth header
     req = {
       headers: {
-        authorization: `Basic ${Buffer.from(
-          `${TEST_USER.email}:${TEST_USER.password}`
-        ).toString('base64')}`,
+        authorization: `Basic ${Buffer.from(`${TEST_USER.email}:${TEST_USER.password}`).toString(
+          'base64'
+        )}`,
       },
     };
-    
+
     // Mock response
     res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
-    
+
     // Mock next function
     next = jest.fn();
-    
+
     // Save original authenticate method
     originalAuthenticate = passport.authenticate;
   });

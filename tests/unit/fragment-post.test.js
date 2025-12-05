@@ -5,7 +5,7 @@ import app from '../../src/app.js';
 
 // Mock the auth middleware
 jest.unstable_mockModule('../../src/auth/auth-middleware.js', () => ({
-  default: (req, res, next) => next()
+  default: (req, res, next) => next(),
 }));
 
 // Mock the basic auth module

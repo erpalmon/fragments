@@ -59,10 +59,10 @@ describe('logger', () => {
   test('uses pretty print in development', async () => {
     const originalNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
-    
+
     const devLogger = await loadLogger();
     expect(devLogger).toBeDefined();
-    
+
     // Clean up
     process.env.NODE_ENV = originalNodeEnv;
   });

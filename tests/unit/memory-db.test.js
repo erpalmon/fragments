@@ -51,11 +51,11 @@ describe('Memory Database', () => {
 
   test('should handle concurrent operations', async () => {
     // Test that the database can handle multiple operations in parallel
-    const promises = Array(10).fill().map((_, i) => 
-      db.put('concurrent', `key${i}`, { value: i })
-    );
+    const promises = Array(10)
+      .fill()
+      .map((_, i) => db.put('concurrent', `key${i}`, { value: i }));
     await Promise.all(promises);
-    
+
     const results = await db.query('concurrent');
     expect(results).toHaveLength(10);
   });
@@ -66,7 +66,7 @@ describe('Memory Database', () => {
     for (let i = 0; i < count; i++) {
       await db.put('large', `item${i}`, { id: i, data: 'x'.repeat(1000) });
     }
-    
+
     const results = await db.query('large');
     expect(results).toHaveLength(count);
   });

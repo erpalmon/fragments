@@ -7,7 +7,10 @@ const options = { level };
 
 // Enable pretty printing in development or when explicitly requested, but avoid
 // configuring transports during tests (reduces dependency surface)
-if (process.env.NODE_ENV !== 'test' && (process.env.NODE_ENV === 'development' || level === 'debug')) {
+if (
+  process.env.NODE_ENV !== 'test' &&
+  (process.env.NODE_ENV === 'development' || level === 'debug')
+) {
   options.transport = {
     target: 'pino-pretty',
     options: {

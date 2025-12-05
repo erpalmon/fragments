@@ -5,7 +5,7 @@ import app from '../../src/app.js';
 
 // Mock the auth middleware
 jest.unstable_mockModule('../../src/auth/auth-middleware.js', () => ({
-  default: (req, res, next) => next()
+  default: (req, res, next) => next(),
 }));
 
 // Mock the basic auth module
@@ -25,9 +25,7 @@ describe('GET /v1/fragments', () => {
   });
 
   test('authenticated users get a fragments array', async () => {
-    const res = await request(app)
-      .get('/v1/fragments')
-      .auth('test@example.com', 'password');
+    const res = await request(app).get('/v1/fragments').auth('test@example.com', 'password');
 
     expect(res.statusCode).toBe(200);
     expect(res.body.status).toBe('ok');
@@ -35,9 +33,7 @@ describe('GET /v1/fragments', () => {
   });
 
   test('returns empty array when no fragments exist', async () => {
-    const res = await request(app)
-      .get('/v1/fragments')
-      .auth('test@example.com', 'password');
+    const res = await request(app).get('/v1/fragments').auth('test@example.com', 'password');
 
     expect(res.body.fragments).toEqual([]);
   });
@@ -48,7 +44,7 @@ describe('GET /v1/fragments/:id', () => {
     const res = await request(app)
       .get('/v1/fragments/non-existent-id')
       .auth('test@example.com', 'password');
-    
+
     expect(res.status).toBe(404);
     expect(res.body.status).toBe('error');
     expect(res.body.error.code).toBe(404);
@@ -63,12 +59,12 @@ describe('GET /v1/fragments/:id', () => {
       .send('test data');
 
     const fragmentId = postRes.body.fragment.id;
-    
+
     // Then try to get it
     const getRes = await request(app)
       .get(`/v1/fragments/${fragmentId}`)
       .auth('test@example.com', 'password');
-    
+
     expect(getRes.status).toBe(200);
     expect(getRes.body.status).toBe('ok');
     expect(getRes.body.fragment).toBeDefined();
@@ -84,12 +80,12 @@ describe('GET /v1/fragments/:id', () => {
       .send('user1 data');
 
     const fragmentId = postRes.body.fragment.id;
-    
+
     // Try to access with user2
     const getRes = await request(app)
       .get(`/v1/fragments/${fragmentId}`)
       .auth('user2@example.com', 'password');
-    
+
     expect(getRes.status).toBe(401);
   });
 });

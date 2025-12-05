@@ -7,10 +7,10 @@ describe('app error handler', () => {
 
   test('returns JSON 500 when an internal error occurs', async () => {
     jest.resetModules();
-    
+
     // Mock the existing POST /v1/fragments route handler to throw
     jest.unstable_mockModule('../../src/routes/api/post.js', () => ({
-      default: (req, res, next) => next(new Error('test error'))
+      default: (req, res, next) => next(new Error('test error')),
     }));
 
     // Load app in an isolated module context
@@ -38,7 +38,7 @@ describe('app error handler', () => {
         const err = new Error('not implemented');
         err.status = 501;
         next(err);
-      }
+      },
     }));
 
     const { default: app } = await import('../../src/app.js');

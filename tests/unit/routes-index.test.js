@@ -5,9 +5,7 @@ import app from '../../src/app.js';
 
 describe('routes index under /v1', () => {
   test('unknown /v1/* path returns JSON 404', async () => {
-    const res = await request(app)
-      .get('/v1/does-not-exist')
-      .auth('user1@email.com', 'password1');
+    const res = await request(app).get('/v1/does-not-exist').auth('user1@email.com', 'password1');
     expect(res.statusCode).toBe(404);
     expect(res.body.status).toBe('error');
     expect(res.body.error.code).toBe(404);
@@ -23,7 +21,8 @@ describe('routes index under /v1', () => {
   test('returns 404 for non-existent /v1 routes with different methods', async () => {
     const methods = ['post', 'put', 'delete', 'patch'];
     for (const method of methods) {
-      const res = await request(app)[method]('/v1/does-not-exist')
+      const res = await request(app)
+        [method]('/v1/does-not-exist')
         .auth('user1@email.com', 'password1');
       expect(res.statusCode).toBe(404);
       expect(res.body.status).toBe('error');
@@ -35,13 +34,13 @@ describe('routes index under /v1', () => {
     const res = await request(app)
       .get('/v1/non-existent-route')
       .auth('user1@email.com', 'password1');
-    
+
     expect(res.body).toMatchObject({
       status: 'error',
       error: {
         code: expect.any(Number),
-        message: expect.any(String)
-      }
+        message: expect.any(String),
+      },
     });
   });
 });

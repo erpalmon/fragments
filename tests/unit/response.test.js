@@ -43,19 +43,19 @@ describe('API Responses', () => {
   });
 
   test('createSuccessResponse() with nested objects preserves structure', () => {
-    const data = { 
-      user: { 
-        id: 1, 
-        name: 'Test' 
-      } 
+    const data = {
+      user: {
+        id: 1,
+        name: 'Test',
+      },
     };
     const successResponse = createSuccessResponse(data);
     expect(successResponse).toEqual({
       status: 'ok',
       user: {
         id: 1,
-        name: 'Test'
-      }
+        name: 'Test',
+      },
     });
   });
 });

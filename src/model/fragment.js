@@ -68,7 +68,9 @@ class Fragment {
   }
 
   async setData(data) {
-    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(typeof data === 'string' ? data : JSON.stringify(data));
+    const buffer = Buffer.isBuffer(data)
+      ? data
+      : Buffer.from(typeof data === 'string' ? data : JSON.stringify(data));
     this.size = buffer.length;
     this.updated = new Date().toISOString();
     await DataStore.saveMetadata(this.ownerId, this.id, this.toObject());

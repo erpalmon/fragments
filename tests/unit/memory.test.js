@@ -154,9 +154,9 @@ describe('in-memory fragments data backend', () => {
     };
 
     await store.writeFragment(frag);
-    const promises = Array(10).fill().map((_, i) => 
-      store.writeFragmentData(ownerId, id, Buffer.from(`test-${i}`))
-    );
+    const promises = Array(10)
+      .fill()
+      .map((_, i) => store.writeFragmentData(ownerId, id, Buffer.from(`test-${i}`)));
     await Promise.all(promises);
 
     const data = await store.readFragmentData(ownerId, id);

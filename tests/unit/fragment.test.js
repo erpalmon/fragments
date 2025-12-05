@@ -5,7 +5,7 @@ import app from '../../src/app.js';
 
 // Mock the auth middleware
 jest.unstable_mockModule('../../src/auth/auth-middleware.js', () => ({
-  default: (req, res, next) => next()
+  default: (req, res, next) => next(),
 }));
 
 // Mock the basic auth module
@@ -33,7 +33,7 @@ describe('POST /v1/fragments', () => {
       .auth('user1@example.com', 'password1')
       .set('Content-Type', 'text/plain')
       .send('test data');
-    
+
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('ok');
     expect(res.body.fragment).toBeDefined();
@@ -48,7 +48,7 @@ describe('POST /v1/fragments', () => {
       .auth('user1@example.com', 'password1')
       .set('Content-Type', 'invalid/type')
       .send('test data');
-    
+
     expect(res.status).toBe(415);
     expect(res.body.status).toBe('error');
     expect(res.body.error.code).toBe(415);
@@ -61,7 +61,7 @@ describe('POST /v1/fragments', () => {
       .auth('user1@example.com', 'password1')
       .set('Content-Type', 'application/json')
       .send(testData);
-    
+
     expect(res.status).toBe(201);
     expect(res.body.fragment.type).toBe('application/json');
     expect(res.body.fragment.size).toBe(JSON.stringify(testData).length);
@@ -74,7 +74,7 @@ describe('POST /v1/fragments', () => {
       .auth('user1@example.com', 'password1')
       .set('Content-Type', 'text/markdown')
       .send(markdown);
-    
+
     expect(res.status).toBe(201);
     expect(res.body.fragment.type).toBe('text/markdown');
     expect(res.body.fragment.size).toBe(markdown.length);
@@ -86,7 +86,7 @@ describe('POST /v1/fragments', () => {
       .auth('user1@example.com', 'password1')
       .set('Content-Type', 'text/plain')
       .send('test data');
-    
+
     expect(res.body.fragment.ownerId).toBe('user1@example.com');
   });
 });

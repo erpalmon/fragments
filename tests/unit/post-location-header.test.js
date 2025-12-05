@@ -51,9 +51,7 @@ describe('POST /v1/fragments Location header branches', () => {
       .send(body);
 
     expect(res.statusCode).toBe(201);
-    expect(res.headers.location).toMatch(
-      /^http:\/\/localhost:8080\/v1\/fragments\/[a-f0-9-]+$/i
-    );
+    expect(res.headers.location).toMatch(/^http:\/\/localhost:8080\/v1\/fragments\/[a-f0-9-]+$/i);
   });
 
   test('includes fragment ID in location header', async () => {
@@ -77,8 +75,6 @@ describe('POST /v1/fragments Location header branches', () => {
       .send(body);
 
     expect(res.statusCode).toBe(201);
-    expect(res.headers.location).toMatch(
-      /^https:\/\/example.com\/v1\/fragments\/[a-f0-9-]+$/i
-    );
+    expect(res.headers.location).toMatch(/^https:\/\/example.com\/v1\/fragments\/[a-f0-9-]+$/i);
   });
 });
