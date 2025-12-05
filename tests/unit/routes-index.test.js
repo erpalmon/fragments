@@ -24,8 +24,7 @@ describe('routes index under /v1', () => {
     const methods = ['post', 'put', 'delete', 'patch'];
 
     for (const method of methods) {
-      const res = await request(app)
-        [method]('/v1/does-not-exist')
+      const res = await request(app)[method]('/v1/does-not-exist')
         .auth('user1@email.com', 'password1');
 
       expect(res.statusCode).toBe(404);
