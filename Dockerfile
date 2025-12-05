@@ -1,5 +1,5 @@
-# Stage 01: install dependencies
-FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea AS dependencies
+# Stage 01: install dependencies (Node >=18.20 to support pino tracingChannel)
+FROM node:18.20.8-alpine3.20 AS dependencies
 
 # Define node env to install prod dependencies only and disable Husky scripts during build
 ENV NODE_ENV=production
@@ -19,7 +19,7 @@ ENV NPM_CONFIG_COLOR=false
 RUN npm ci --ignore-scripts
 
 # Stage 02: setup our app
-FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea AS setup
+FROM node:18.20.8-alpine3.20 AS setup
 
 WORKDIR /fragments
 
@@ -32,7 +32,7 @@ COPY tests/.htpasswd ./tests/.htpasswd
 COPY package*.json ./
 
 # Stage 03: run our app
-FROM node:18.14.2-alpine3.16@sha256:72c0b366821377f04d816cd0287360e372cc55782d045e557e2640cb8040d3ea
+FROM node:18.20.8-alpine3.20
 
 # Set image metadata
 LABEL maintainer="Your Name <your.email@example.com>"
