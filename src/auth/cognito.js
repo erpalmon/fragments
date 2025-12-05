@@ -11,7 +11,7 @@ if (process.env.NODE_ENV === 'test') {
     constructor() {
       this.name = 'cognito';
     }
-    authenticate(req) {
+    authenticate(_req) {
       return this.success({ email: 'test@example.com' });
     }
   }
@@ -44,7 +44,7 @@ if (!usingMock) {
       constructor() {
         this.name = 'cognito';
       }
-      authenticate(req) {
+      authenticate(_req) {
         return this.success({ email: 'test@example.com' });
       }
     }

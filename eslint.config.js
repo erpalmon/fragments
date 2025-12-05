@@ -1,8 +1,8 @@
-import js from '@eslint/js';
-import globals from 'globals';
-import jestPlugin from 'eslint-plugin-jest';
+const js = require('@eslint/js');
+const globals = require('globals');
+const jestPlugin = require('eslint-plugin-jest');
 
-export default [
+module.exports = [
   js.configs.recommended,
   {
     files: ['**/*.js'],
@@ -25,6 +25,7 @@ export default [
   {
     files: ['tests/**/*.js'],
     rules: {
+      'no-unused-vars': 'off',
       'jest/no-disabled-tests': 'warn',
       'jest/no-focused-tests': 'error',
       'jest/no-identical-title': 'error',

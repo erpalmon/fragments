@@ -1,4 +1,5 @@
-// jest.config.cjs
+/* eslint-env node */
+/* global process */
 module.exports = {
   testEnvironment: 'node',
   transform: {
