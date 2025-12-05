@@ -16,8 +16,8 @@ services:
       - API_URL=http://localhost:8080
       # Force the app to listen on 8080 to match integration tests
       - PORT=8080
-      # Enable Basic Auth (required so service can start)
-      - HTPASSWD_FILE=tests/.htpasswd
+      # Enable Basic Auth (required so service can start) – use existing fixture path
+      - HTPASSWD_FILE=./tests/fixtures/.htpasswd
       - NODE_ENV=development
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}

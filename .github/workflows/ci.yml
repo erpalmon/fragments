@@ -76,7 +76,7 @@ jobs:
       - name: Wait for fragments service
         run: |
           echo "Waiting for fragments on http://localhost:8080 (and 8081 fallback)..."
-          for i in {1..60}; do
+          for i in {1..90}; do
             if curl -sSf http://localhost:8080/v1/health >/dev/null 2>&1 || \
                curl -sSf http://localhost:8080/health >/dev/null 2>&1 || \
                curl -sSf http://localhost:8081/v1/health >/dev/null 2>&1 || \
@@ -84,12 +84,17 @@ jobs:
               echo "Fragments service is up"
               exit 0
             fi
+            if [ $((i % 10)) -eq 0 ]; then
+              echo "Still waiting... attempt $i"
+              docker compose ps
+              docker compose logs fragments --no-color --tail=50 || true
+            fi
             echo "Waiting 2s..."
             sleep 2
           done
           echo "Fragments service did not become available"
           docker compose ps
-          docker compose logs --no-color --tail=200
+          docker compose logs --no-color --tail=200 || true
           exit 1
       - name: Run integration tests
         run: npm run test:integration
