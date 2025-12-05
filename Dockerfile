@@ -44,6 +44,7 @@ WORKDIR /fragments
 COPY --from=setup /fragments ./
 
 # Install curl for healthcheck
+# hadolint ignore=DL3018
 RUN apk --no-cache --update add curl
 
 # Environment variables
